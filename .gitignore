@@ -1,0 +1,10 @@
+/build/
+/dist/
+/third_party/iceoryx2/
+.vs/
+CMakeUserPresets.json
+*.user
+*.obj
+*.pdb
+*.ilk
+*.exp
