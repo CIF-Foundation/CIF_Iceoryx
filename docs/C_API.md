@@ -57,7 +57,7 @@ Probe (raw or pcap): `iox2_cif_ps_info(name, topic, timeout_ms, type, cap, &len,
 
 Payload chunks are shared. Best-effort reserves `be_subscriber_buffer + be_max_subscribers + 1` chunks. Backpressure reserves `bp_subscriber_buffer + 2`. A publish copies the payload once into one chunk.
 
-Write sends the backpressure queue first when that publisher exists. If that wait expires, `timed_out=1` and best-effort is not sent. Receive timeouts are also `timed_out`, not a status error. `ps_sub_create` waiting for the stream still returns **8109**. The subscriber queue depth is taken from the existing service (`subscriber_max_buffer_size`), including publishers not created by this library. Raw create rejects `iox2_cif.pcap` / `iox2_cif.pcap.*` (**8110**).
+Write sends the backpressure queue first when that publisher exists. If that wait expires, `timed_out=1` and best-effort is not sent. Receive sets `timed_out=1` whenever there is no valid sample (including `timeout_ms` 0). `timed_out=0` means the payload is valid. Receive timeouts are not a status error. `ps_sub_create` waiting for the stream still returns **8109**. The subscriber queue depth is taken from the existing service (`subscriber_max_buffer_size`), including publishers not created by this library. Raw create rejects `iox2_cif.pcap` / `iox2_cif.pcap.*` (**8110**).
 
 Do not use the same `(name, topic)` for both a blackboard and a pub/sub stream.
 

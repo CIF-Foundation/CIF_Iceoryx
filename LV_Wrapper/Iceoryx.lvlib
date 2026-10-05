@@ -69,6 +69,7 @@
 			<Item Name="CIF Recieve.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Recieve.vi"/>
 			<Item Name="Destroy CIF Publisher.vi" Type="VI" URL="../PubSub/CIF pcap/Destroy CIF Publisher.vi"/>
 			<Item Name="Destroy CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Destroy CIF Subscriber.vi"/>
+			<Item Name="Get CIF Subscriber Count.vi" Type="VI" URL="../PubSub/CIF pcap/Get CIF Subscriber Count.vi"/>
 			<Item Name="Read CIF Publisher Info.vi" Type="VI" URL="../PubSub/CIF pcap/Read CIF Publisher Info.vi"/>
 			<Item Name="CIF Get Publisher Stats.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Get Publisher Stats.vi"/>
 			<Item Name="CIF Get Subscriber Stats.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Get Subscriber Stats.vi"/>
@@ -76,5 +77,21 @@
 			<Item Name="Reset Stats CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Reset Stats CIF Subscriber.vi"/>
 			<Item Name="Flush CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Flush CIF Subscriber.vi"/>
 		</Item>
+	</Item>
+	<Item Name="Refnum" Type="Folder">
+		<Item Name="Typedef" Type="Folder">
+			<Item Name="CIF Subscriber Refnum.ctl" Type="VI" URL="../Refnum/Typedef/CIF Subscriber Refnum.ctl"/>
+			<Item Name="Raw Subscriber Refnum.ctl" Type="VI" URL="../Refnum/Typedef/Raw Subscriber Refnum.ctl"/>
+			<Item Name="Raw Publisher Refnum.ctl" Type="VI" URL="../Refnum/Typedef/Raw Publisher Refnum.ctl"/>
+			<Item Name="CIF Publisher Refnum.ctl" Type="VI" URL="../Refnum/Typedef/CIF Publisher Refnum.ctl"/>
+		</Item>
+		<Item Name="CIF Publisher from Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher from Refnum.vi"/>
+		<Item Name="CIF Subscriber from Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber from Refnum.vi"/>
+		<Item Name="CIF Subscriber to Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber to Refnum.vi"/>
+		<Item Name="CIF Publisher to Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher to Refnum.vi"/>
+		<Item Name="Raw Publisher from Refnum.vi" Type="VI" URL="../Refnum/Raw Publisher from Refnum.vi"/>
+		<Item Name="Raw Subscriber from Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber from Refnum.vi"/>
+		<Item Name="Raw Subscriber to Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber to Refnum.vi"/>
+		<Item Name="Raw Publisher to Refnum.vi" Type="VI" URL="../Refnum/Raw Publisher to Refnum.vi"/>
 	</Item>
 </Library>

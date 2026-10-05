@@ -747,7 +747,7 @@ static int test_pubsub(void) {
     timed_out = 1;
     actual = 9;
     st = ps_recv(be, &got, 0, &timed_out, &actual);
-    if (st != IOX2_CIF_OK || timed_out != 0 || actual != 0) {
+    if (st != IOX2_CIF_OK || timed_out != 1 || actual != 0) {
         fprintf(stderr, "FAIL ps recv empty one-shot to=%d actual=%u\n", (int)timed_out, actual);
         iox2_cif_ps_destroy_sub(be);
         iox2_cif_ps_destroy_sub(bp);
@@ -1130,6 +1130,16 @@ static int test_pcap(void) {
         bp, &out, got, sizeof(got), 40, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 1 || actual != 0 || timeouts != 1) {
         fprintf(stderr, "FAIL pcap flush then timeout to=%d actual=%u timeouts=%llu\n",
+            (int)timed_out, actual, (unsigned long long)timeouts);
+        pcap_cleanup(writer, be, bp);
+        return 1;
+    }
+    timed_out = 0;
+    actual = 9;
+    st = iox2_cif_pcap_receive(
+        bp, &out, got, sizeof(got), 0, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+    if (st != IOX2_CIF_OK || timed_out != 1 || actual != 0 || timeouts != 2) {
+        fprintf(stderr, "FAIL pcap recv empty one-shot to=%d actual=%u timeouts=%llu\n",
             (int)timed_out, actual, (unsigned long long)timeouts);
         pcap_cleanup(writer, be, bp);
         return 1;

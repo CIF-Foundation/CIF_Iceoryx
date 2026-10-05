@@ -5224,10 +5224,10 @@ iox2_cif_status iox2_cif_ps_receive(
             st = IOX2_CIF_ERR_INTERNAL;
         } else {
             st = ps_take_sample(s, elems, cap, actual, max, &got);
-            if (st == IOX2_CIF_OK && !got) {
-                store_i32(timed_out, 1);
-            }
         }
+    }
+    if (st == IOX2_CIF_OK && !got) {
+        store_i32(timed_out, 1);
     }
 
     {
@@ -6343,11 +6343,11 @@ iox2_cif_status iox2_cif_pcap_receive(
             st = IOX2_CIF_ERR_INTERNAL;
         } else {
             st = pcap_take_sample(s, header, pcap, cap, actual, max, &got);
-            if (st == IOX2_CIF_OK && !got) {
-                store_i32(timed_out, 1);
-                did_timeout = 1;
-            }
         }
+    }
+    if (st == IOX2_CIF_OK && !got) {
+        store_i32(timed_out, 1);
+        did_timeout = 1;
     }
 
     {

@@ -574,8 +574,9 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_ps_write(
 /**
  * Copy one queued sample into `elems`.
  *
- * timeout_ms 0 = one shot. No sample → status 0, actual 0, timed_out 0.
- * timeout_ms > 0 waits for a sample or notify. None → status 0, actual 0, timed_out 1.
+ * timeout_ms 0 = one shot (no wait). timeout_ms > 0 waits for a sample or notify.
+ * No valid sample → status 0, actual 0, timed_out 1 (even when timeout_ms is 0).
+ * timed_out 0 means the payload/actual outputs are valid.
  */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_ps_receive(
     uint64_t subscriber,
@@ -679,6 +680,10 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_writer_stats(
 
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_writer_stats_reset(uint64_t writer);
 
+/**
+ * Same timeout / timed_out rules as iox2_cif_ps_receive: no valid sample →
+ * status 0, actual 0, timed_out 1 (including timeout_ms 0).
+ */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_receive(
     uint64_t subscriber,
     void* header,

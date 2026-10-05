@@ -143,7 +143,7 @@ Create/destroy / `ps_info`: **Run in UI thread**. `ps_write` / `ps_receive` / `p
 | `iox2_cif_ps_info` | CStr name/topic; U32 timeout; type buf + U32 cap + U32* len; U32* max_count, be_subscriber_buffer, bp_subscriber_buffer, value_size |
 | `iox2_cif_ps_destroy_writer` / `destroy_sub` | U64 |
 
-`timeout_ms` 0 on receive is one-shot (`timed_out` stays 0 if empty). `timeout_ms` > 0 waits; empty → `timed_out` 1, status 0.
+`timeout_ms` 0 on receive is one-shot (no wait). `timeout_ms` > 0 waits. No valid sample → `timed_out` 1, status 0, even when `timeout_ms` is 0. `timed_out` 0 means the payload is valid.
 
 ## CIF-pcap pub/sub (`iox2_cif_pcap_*`)
 

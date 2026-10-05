@@ -12,6 +12,8 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="Tests" Type="Folder">
+			<Item Name="Backpressure test CIF Pcap.vi" Type="VI" URL="../test/Backpressure test CIF Pcap.vi"/>
+			<Item Name="Backpressure test.vi" Type="VI" URL="../test/Backpressure test.vi"/>
 			<Item Name="Performance Test.vi" Type="VI" URL="../test/Performance Test.vi"/>
 			<Item Name="Simple cif pcap pub-sub test.vi" Type="VI" URL="../test/Simple cif pcap pub-sub test.vi"/>
 			<Item Name="Simple pub-sub test.vi" Type="VI" URL="../test/Simple pub-sub test.vi"/>
