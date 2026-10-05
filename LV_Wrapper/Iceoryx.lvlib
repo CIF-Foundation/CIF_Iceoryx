@@ -40,7 +40,7 @@
 		<Item Name="Create Blackboard.vi" Type="VI" URL="../Blackboard/Create Blackboard.vi"/>
 		<Item Name="Start Blackboard.vi" Type="VI" URL="../Blackboard/Start Blackboard.vi"/>
 		<Item Name="Destroy Blackboard.vi" Type="VI" URL="../Blackboard/Destroy Blackboard.vi"/>
-		<Item Name="Destroy Reader.vi" Type="VI" URL="../Blackboard/Destroy Reader.vi"/>
+		<Item Name="Destroy Reader.vim" Type="VI" URL="../Blackboard/Destroy Reader.vim"/>
 		<Item Name="Create Reader.vim" Type="VI" URL="../Blackboard/Create Reader.vim"/>
 		<Item Name="Create Writer.vim" Type="VI" URL="../Blackboard/Create Writer.vim"/>
 		<Item Name="Read.vim" Type="VI" URL="../Blackboard/Read.vim"/>
@@ -81,17 +81,29 @@
 	<Item Name="Refnum" Type="Folder">
 		<Item Name="Typedef" Type="Folder">
 			<Item Name="CIF Subscriber Refnum.ctl" Type="VI" URL="../Refnum/Typedef/CIF Subscriber Refnum.ctl"/>
+			<Item Name="CIF Publisher Refnum.ctl" Type="VI" URL="../Refnum/Typedef/CIF Publisher Refnum.ctl"/>
 			<Item Name="Raw Subscriber Refnum.ctl" Type="VI" URL="../Refnum/Typedef/Raw Subscriber Refnum.ctl"/>
 			<Item Name="Raw Publisher Refnum.ctl" Type="VI" URL="../Refnum/Typedef/Raw Publisher Refnum.ctl"/>
-			<Item Name="CIF Publisher Refnum.ctl" Type="VI" URL="../Refnum/Typedef/CIF Publisher Refnum.ctl"/>
+			<Item Name="BB Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Refnum.ctl"/>
+			<Item Name="BB Reader Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Reader Refnum.ctl"/>
+			<Item Name="BB Raw Reader Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Raw Reader Refnum.ctl"/>
+			<Item Name="BB Writer Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Writer Refnum.ctl"/>
 		</Item>
-		<Item Name="CIF Publisher from Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher from Refnum.vi"/>
-		<Item Name="CIF Subscriber from Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber from Refnum.vi"/>
-		<Item Name="CIF Subscriber to Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber to Refnum.vi"/>
 		<Item Name="CIF Publisher to Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher to Refnum.vi"/>
-		<Item Name="Raw Publisher from Refnum.vi" Type="VI" URL="../Refnum/Raw Publisher from Refnum.vi"/>
-		<Item Name="Raw Subscriber from Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber from Refnum.vi"/>
-		<Item Name="Raw Subscriber to Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber to Refnum.vi"/>
+		<Item Name="CIF Publisher from Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher from Refnum.vi"/>
+		<Item Name="CIF Subscriber to Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber to Refnum.vi"/>
+		<Item Name="CIF Subscriber from Refnum.vi" Type="VI" URL="../Refnum/CIF Subscriber from Refnum.vi"/>
 		<Item Name="Raw Publisher to Refnum.vi" Type="VI" URL="../Refnum/Raw Publisher to Refnum.vi"/>
+		<Item Name="Raw Publisher from Refnum.vi" Type="VI" URL="../Refnum/Raw Publisher from Refnum.vi"/>
+		<Item Name="Raw Subscriber to Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber to Refnum.vi"/>
+		<Item Name="Raw Subscriber from Refnum.vi" Type="VI" URL="../Refnum/Raw Subscriber from Refnum.vi"/>
+		<Item Name="BB to Refnum.vi" Type="VI" URL="../Refnum/BB to Refnum.vi"/>
+		<Item Name="BB from Refnum.vi" Type="VI" URL="../Refnum/BB from Refnum.vi"/>
+		<Item Name="BB Writer to Refnum.vi" Type="VI" URL="../Refnum/BB Writer to Refnum.vi"/>
+		<Item Name="BB Writer from Refnum.vi" Type="VI" URL="../Refnum/BB Writer from Refnum.vi"/>
+		<Item Name="BB Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Reader to Refnum.vi"/>
+		<Item Name="BB Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Reader from Refnum.vi"/>
+		<Item Name="BB Raw Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader to Refnum.vi"/>
+		<Item Name="BB Raw Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader from Refnum.vi"/>
 	</Item>
 </Library>

@@ -12,15 +12,13 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="Tests" Type="Folder">
-			<Item Name="Backpressure test CIF Pcap.vi" Type="VI" URL="../test/Backpressure test CIF Pcap.vi"/>
-			<Item Name="Backpressure test.vi" Type="VI" URL="../test/Backpressure test.vi"/>
-			<Item Name="Performance Test.vi" Type="VI" URL="../test/Performance Test.vi"/>
-			<Item Name="Simple cif pcap pub-sub test.vi" Type="VI" URL="../test/Simple cif pcap pub-sub test.vi"/>
-			<Item Name="Simple pub-sub test.vi" Type="VI" URL="../test/Simple pub-sub test.vi"/>
-			<Item Name="Test Check Publisher Data Length.vi" Type="VI" URL="../test/Test Check Publisher Data Length.vi"/>
-			<Item Name="Test write read.vi" Type="VI" URL="../test/Test write read.vi"/>
+			<Item Name="Backpressure test CIF Pcap.vi" Type="VI" URL="../Backpressure test CIF Pcap.vi"/>
+			<Item Name="Backpressure test.vi" Type="VI" URL="../Backpressure test.vi"/>
+			<Item Name="Performance Test.vi" Type="VI" URL="../Performance Test.vi"/>
+			<Item Name="Test BB write read.vi" Type="VI" URL="../Test BB write read.vi"/>
+			<Item Name="Test Check Publisher Data Length.vi" Type="VI" URL="../Test Check Publisher Data Length.vi"/>
 		</Item>
-		<Item Name="Iceoryx.lvlib" Type="Library" URL="../Iceoryx.lvlib"/>
+		<Item Name="Iceoryx.lvlib" Type="Library" URL="../../Iceoryx.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Assert Error Cluster Type.vim" Type="VI" URL="/&lt;vilib&gt;/Utility/TypeAssert/Assert Error Cluster Type.vim"/>
