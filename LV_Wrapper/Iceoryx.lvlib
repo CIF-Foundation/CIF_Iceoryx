@@ -41,13 +41,14 @@
 		<Item Name="Start Blackboard.vi" Type="VI" URL="../Blackboard/Start Blackboard.vi"/>
 		<Item Name="Destroy Blackboard.vi" Type="VI" URL="../Blackboard/Destroy Blackboard.vi"/>
 		<Item Name="Destroy Reader.vim" Type="VI" URL="../Blackboard/Destroy Reader.vim"/>
-		<Item Name="Create Reader.vim" Type="VI" URL="../Blackboard/Create Reader.vim"/>
 		<Item Name="Create Writer.vim" Type="VI" URL="../Blackboard/Create Writer.vim"/>
+		<Item Name="Create Raw Writer.vi" Type="VI" URL="../Blackboard/Create Raw Writer.vi"/>
+		<Item Name="Create Reader.vim" Type="VI" URL="../Blackboard/Create Reader.vim"/>
 		<Item Name="Read.vim" Type="VI" URL="../Blackboard/Read.vim"/>
 		<Item Name="Write.vim" Type="VI" URL="../Blackboard/Write.vim"/>
 		<Item Name="Create Raw Reader.vi" Type="VI" URL="../Blackboard/Create Raw Reader.vi"/>
 		<Item Name="Read Raw.vi" Type="VI" URL="../Blackboard/Read Raw.vi"/>
-		<Item Name="Read Raw Size.vi" Type="VI" URL="../Blackboard/Read Raw Size.vi"/>
+		<Item Name="Read Raw Size.vim" Type="VI" URL="../Blackboard/Read Raw Size.vim"/>
 		<Item Name="Read Topic Descriptor.vi" Type="VI" URL="../Blackboard/Read Topic Descriptor.vi"/>
 		<Item Name="Read Partial Raw.vi" Type="VI" URL="../Blackboard/Read Partial Raw.vi"/>
 	</Item>
@@ -88,6 +89,7 @@
 			<Item Name="BB Reader Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Reader Refnum.ctl"/>
 			<Item Name="BB Raw Reader Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Raw Reader Refnum.ctl"/>
 			<Item Name="BB Writer Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Writer Refnum.ctl"/>
+			<Item Name="BB Raw Writer Refnum.ctl" Type="VI" URL="../Refnum/Typedef/BB Raw Writer Refnum.ctl"/>
 		</Item>
 		<Item Name="CIF Publisher to Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher to Refnum.vi"/>
 		<Item Name="CIF Publisher from Refnum.vi" Type="VI" URL="../Refnum/CIF Publisher from Refnum.vi"/>
@@ -101,9 +103,12 @@
 		<Item Name="BB from Refnum.vi" Type="VI" URL="../Refnum/BB from Refnum.vi"/>
 		<Item Name="BB Writer to Refnum.vi" Type="VI" URL="../Refnum/BB Writer to Refnum.vi"/>
 		<Item Name="BB Writer from Refnum.vi" Type="VI" URL="../Refnum/BB Writer from Refnum.vi"/>
+		<Item Name="BB Raw Writer to Refnum.vi" Type="VI" URL="../Refnum/BB Raw Writer to Refnum.vi"/>
+		<Item Name="BB Raw Writer from Refnum.vi" Type="VI" URL="../Refnum/BB Raw Writer from Refnum.vi"/>
 		<Item Name="BB Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Reader to Refnum.vi"/>
 		<Item Name="BB Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Reader from Refnum.vi"/>
 		<Item Name="BB Raw Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader to Refnum.vi"/>
 		<Item Name="BB Raw Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader from Refnum.vi"/>
 	</Item>
+	<Item Name="Write Raw.vi" Type="VI" URL="../Blackboard/Write Raw.vi"/>
 </Library>
