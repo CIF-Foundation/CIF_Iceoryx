@@ -205,6 +205,7 @@ Not supported: strings, paths, variants, handles, nested arrays, 2D+ arrays, clu
 | 8112 | Two topics share an FNV-1a key |
 | 8116 | iceoryx2 / internal — use `iox2_cif_status_text` |
 | 8117 | Wrapper lock timeout (~5 s) |
+| 8118 | Maximum number of subscribers already attached |
 
 ---
 

@@ -17,6 +17,8 @@
 			<Item Name="Performance Test.vi" Type="VI" URL="../Performance Test.vi"/>
 			<Item Name="Test BB write read.vi" Type="VI" URL="../Test BB write read.vi"/>
 			<Item Name="Test Check Publisher Data Length.vi" Type="VI" URL="../Test Check Publisher Data Length.vi"/>
+			<Item Name="Test CIF pcap PubSub.vi" Type="VI" URL="../Test CIF pcap PubSub.vi"/>
+			<Item Name="Test Raw PubSub.vi" Type="VI" URL="../Test Raw PubSub.vi"/>
 		</Item>
 		<Item Name="Iceoryx.lvlib" Type="Library" URL="../../Iceoryx.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">

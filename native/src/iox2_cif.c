@@ -726,6 +726,9 @@ iox2_cif_status iox2_cif_status_text(
     case IOX2_CIF_ERR_LOCK_TIMEOUT:
         text = "lock timeout";
         break;
+    case IOX2_CIF_ERR_MAX_SUBSCRIBERS:
+        text = "maximum number of subscribers already attached";
+        break;
     default:
         break;
     }
@@ -4076,6 +4079,18 @@ static iox2_cif_status map_pubsub_open_error(int rc) {
     return IOX2_CIF_ERR_INTERNAL;
 }
 
+static iox2_cif_status map_subscriber_create_error(int rc) {
+    if (rc == (int)iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS) {
+        set_last_detail("maximum number of subscribers already attached");
+        return IOX2_CIF_ERR_MAX_SUBSCRIBERS;
+    }
+    set_last_detail(iox2_subscriber_create_error_string((enum iox2_subscriber_create_error_e)rc));
+    if (rc == (int)iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    return IOX2_CIF_ERR_INTERNAL;
+}
+
 static iox2_cif_status map_event_open_error(int rc) {
     if (rc == IOX2_OK) {
         return IOX2_CIF_OK;
@@ -5065,14 +5080,9 @@ iox2_cif_status iox2_cif_ps_sub_create(
     iox2_port_factory_subscriber_builder_set_history_request(&subb, 0);
     rc = iox2_port_factory_subscriber_builder_create(subb, NULL, &s->subscriber);
     if (rc != IOX2_OK) {
-        if (rc == (int)iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE
-            || rc == (int)iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS) {
-            ps_sub_free(s);
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-        set_last_detail(iox2_subscriber_create_error_string((enum iox2_subscriber_create_error_e)rc));
+        iox2_cif_status st = map_subscriber_create_error(rc);
         ps_sub_free(s);
-        return IOX2_CIF_ERR_INTERNAL;
+        return st;
     }
 
     lisb = iox2_port_factory_event_listener_builder(&s->event, NULL);
@@ -5631,12 +5641,7 @@ static iox2_cif_status pcap_finish_sub(iox2_cif_ps_sub* s) {
     iox2_port_factory_subscriber_builder_set_history_request(&subb, 0);
     rc = iox2_port_factory_subscriber_builder_create(subb, NULL, &s->subscriber);
     if (rc != IOX2_OK) {
-        if (rc == (int)iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE
-            || rc == (int)iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS) {
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-        set_last_detail(iox2_subscriber_create_error_string((enum iox2_subscriber_create_error_e)rc));
-        return IOX2_CIF_ERR_INTERNAL;
+        return map_subscriber_create_error(rc);
     }
     lisb = iox2_port_factory_event_listener_builder(&s->event, NULL);
     rc = iox2_port_factory_listener_builder_create(lisb, NULL, &s->listener);

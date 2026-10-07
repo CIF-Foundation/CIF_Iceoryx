@@ -875,6 +875,38 @@ static int test_pubsub(void) {
     }
 
     {
+        uint64_t one = 0;
+        uint64_t s1 = 0;
+        uint64_t s2 = 0;
+        st = iox2_cif_ps_writer_create(
+            "iox2_cif_smoke_ps_onesub", "x", IOX2_CIF_TYPE_I32, 4, 4, 1, "", 1, 0, 1, 0, &one);
+        if (st != IOX2_CIF_OK) {
+            iox2_cif_ps_destroy_writer(writer);
+            return fail("ps onesub writer", st);
+        }
+        st = iox2_cif_ps_sub_create(
+            "iox2_cif_smoke_ps_onesub", "x", IOX2_CIF_TYPE_I32, 4, 4, 0, 0, 2000, &s1);
+        if (st != IOX2_CIF_OK) {
+            iox2_cif_ps_destroy_writer(one);
+            iox2_cif_ps_destroy_writer(writer);
+            return fail("ps onesub first", st);
+        }
+        st = iox2_cif_ps_sub_create(
+            "iox2_cif_smoke_ps_onesub", "x", IOX2_CIF_TYPE_I32, 4, 4, 0, 0, 2000, &s2);
+        if (st != IOX2_CIF_ERR_MAX_SUBSCRIBERS) {
+            if (s2 != 0) {
+                iox2_cif_ps_destroy_sub(s2);
+            }
+            iox2_cif_ps_destroy_sub(s1);
+            iox2_cif_ps_destroy_writer(one);
+            iox2_cif_ps_destroy_writer(writer);
+            return fail("ps onesub second", st);
+        }
+        iox2_cif_ps_destroy_sub(s1);
+        iox2_cif_ps_destroy_writer(one);
+    }
+
+    {
         char type_buf[64];
         uint32_t type_n = 0;
         uint32_t maxc = 0;

@@ -117,7 +117,7 @@ Optional: `iox2_cif_init("cif")` once at start; `iox2_cif_shutdown` when done. I
 
 ## Error codes
 
-`0` success. Common failures: `8100` bad argument, `8101` bad handle, `8105` writer still held, `8106` schema mismatch, `8109` reader-create timeout, `8116` internal (iceoryx2), `8117` wrapper lock timeout. Wire the I32 return into a LabVIEW error cluster (`source` = function name).
+`0` success. Common failures: `8100` bad argument, `8101` bad handle, `8105` writer still held, `8106` schema mismatch, `8109` reader-create timeout, `8116` internal (iceoryx2), `8117` wrapper lock timeout, `8118` max subscribers already attached. Wire the I32 return into a LabVIEW error cluster (`source` = function name).
 
 ## Notes for this prototype
 

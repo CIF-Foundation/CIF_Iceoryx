@@ -111,5 +111,6 @@ Primitive `type_name` values: `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32
 | 8115 | Unsupported (subscriber side was not created on that writer) |
 | 8116 | Internal — `iox2_cif_status_text` |
 | 8117 | Wrapper lock timeout |
+| 8118 | Maximum number of subscribers already attached |
 
 Full list is in the header enum `iox2_cif_status`.

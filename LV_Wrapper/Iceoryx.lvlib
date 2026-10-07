@@ -44,13 +44,14 @@
 		<Item Name="Create Writer.vim" Type="VI" URL="../Blackboard/Create Writer.vim"/>
 		<Item Name="Create Raw Writer.vi" Type="VI" URL="../Blackboard/Create Raw Writer.vi"/>
 		<Item Name="Create Reader.vim" Type="VI" URL="../Blackboard/Create Reader.vim"/>
-		<Item Name="Read.vim" Type="VI" URL="../Blackboard/Read.vim"/>
-		<Item Name="Write.vim" Type="VI" URL="../Blackboard/Write.vim"/>
 		<Item Name="Create Raw Reader.vi" Type="VI" URL="../Blackboard/Create Raw Reader.vi"/>
+		<Item Name="Write.vim" Type="VI" URL="../Blackboard/Write.vim"/>
+		<Item Name="Write Raw.vi" Type="VI" URL="../Blackboard/Write Raw.vi"/>
+		<Item Name="Read.vim" Type="VI" URL="../Blackboard/Read.vim"/>
 		<Item Name="Read Raw.vi" Type="VI" URL="../Blackboard/Read Raw.vi"/>
+		<Item Name="Read Partial Raw.vi" Type="VI" URL="../Blackboard/Read Partial Raw.vi"/>
 		<Item Name="Read Raw Size.vim" Type="VI" URL="../Blackboard/Read Raw Size.vim"/>
 		<Item Name="Read Topic Descriptor.vi" Type="VI" URL="../Blackboard/Read Topic Descriptor.vi"/>
-		<Item Name="Read Partial Raw.vi" Type="VI" URL="../Blackboard/Read Partial Raw.vi"/>
 	</Item>
 	<Item Name="PubSub" Type="Folder">
 		<Item Name="Raw" Type="Folder">
@@ -64,8 +65,8 @@
 			<Item Name="Read Publisher Info.vi" Type="VI" URL="../PubSub/Raw/Read Publisher Info.vi"/>
 		</Item>
 		<Item Name="CIF pcap" Type="Folder">
-			<Item Name="Create CIF Subscriber.vim" Type="VI" URL="../PubSub/CIF pcap/Create CIF Subscriber.vim"/>
-			<Item Name="Create CIF Publisher.vim" Type="VI" URL="../PubSub/CIF pcap/Create CIF Publisher.vim"/>
+			<Item Name="Create CIF Publisher.vi" Type="VI" URL="../PubSub/CIF pcap/Create CIF Publisher.vi"/>
+			<Item Name="Create CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Create CIF Subscriber.vi"/>
 			<Item Name="CIF Publish.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Publish.vi"/>
 			<Item Name="CIF Recieve.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Recieve.vi"/>
 			<Item Name="Destroy CIF Publisher.vi" Type="VI" URL="../PubSub/CIF pcap/Destroy CIF Publisher.vi"/>
@@ -110,5 +111,4 @@
 		<Item Name="BB Raw Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader to Refnum.vi"/>
 		<Item Name="BB Raw Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader from Refnum.vi"/>
 	</Item>
-	<Item Name="Write Raw.vi" Type="VI" URL="../Blackboard/Write Raw.vi"/>
 </Library>

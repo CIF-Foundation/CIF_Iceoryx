@@ -127,6 +127,7 @@ typedef enum iox2_cif_status {
     IOX2_CIF_ERR_UNSUPPORTED = 8115,      /* e.g. backpressure subscriber on a BE-only writer */
     IOX2_CIF_ERR_INTERNAL = 8116,         /* iceoryx2 or wrapper failure */
     IOX2_CIF_ERR_LOCK_TIMEOUT = 8117,     /* wrapper lock not acquired (stuck holder) */
+    IOX2_CIF_ERR_MAX_SUBSCRIBERS = 8118,  /* subscriber create: max ports already attached */
 
     IOX2_CIF_ERR_MAX = 8199
 } iox2_cif_status;
