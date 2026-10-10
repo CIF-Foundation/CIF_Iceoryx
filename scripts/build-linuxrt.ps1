@@ -32,8 +32,9 @@ Invoke-Rt "mkdir -p $RemoteRoot"
 scp -o ConnectTimeout=15 $tar "${Target}:/tmp/iox2_cif_linuxrt.tar"
 Invoke-Rt "mkdir -p $RemoteRoot && tar -xf /tmp/iox2_cif_linuxrt.tar -C $RemoteRoot && rm -f /tmp/iox2_cif_linuxrt.tar && find $RemoteRoot/scripts -name '*.sh' -exec sed -i 's/\r$//' {} \; && chmod +x $RemoteRoot/scripts/build-linuxrt.sh"
 
-Write-Host "Building on $Target (first iceoryx2/Rust compile can take a while)..."
-Invoke-Rt "cd $RemoteRoot && bash scripts/build-linuxrt.sh"
+Write-Host "Building on $Target (core2, no AVX; first iceoryx2/Rust compile can take a while)..."
+# Atom cRIO (e.g. 9057 E3805) has no AVX. Force a clean configure so CFLAGS apply.
+Invoke-Rt "cd $RemoteRoot && rm -rf build-linuxrt && export CFLAGS='-O2 -fPIC -march=core2' CXXFLAGS='-O2 -fPIC -march=core2' RUSTFLAGS='-C relocation-model=pic -C target-cpu=core2' && bash scripts/build-linuxrt.sh"
 
 $distDir = Join-Path $Root "dist"
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null

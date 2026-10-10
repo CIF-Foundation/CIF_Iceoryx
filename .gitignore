@@ -25,6 +25,8 @@ __pycache__/
 /build/
 /build-linuxrt/
 /dist/
+/Installers/output/
+/Installers/staging/
 /third_party/iceoryx2/
 .vs/
 CMakeUserPresets.json

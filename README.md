@@ -15,6 +15,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 
 That writes `dist\iox2_cif.dll`. Linux RT: `scripts\build-linuxrt.ps1` → `dist\libiox2_cif.so`.
 
+Native installers ([`Installers/readme.md`](Installers/readme.md)) place those libraries for LabVIEW:
+
+- **Windows:** `C:\Program Files\CIF_Foundation\Libraries\iox2_cif.dll`
+- **Linux RT / Ubuntu:** `/usr/lib/cif/libiox2_cif.so` with a symlink at `/usr/lib/libiox2_cif.so`
+
+Call Library Function nodes should use the library name only (`iox2_cif.dll` / `libiox2_cif.so`).
+
 No RouDi or extra daemon. iceoryx2 is linked into the library.
 
 ---
@@ -211,7 +218,7 @@ Not supported: strings, paths, variants, handles, nested arrays, 2D+ arrays, clu
 
 ## LabVIEW notes
 
-64-bit only. Calling convention **C (cdecl)**. Return type **I32**. Strings: **C String Pointer**. Output handles: U64 **Pointer to Value**. Input handles: U64 **Value**.
+64-bit only. Calling convention **C (cdecl)**. Return type **I32**. Strings: **C String Pointer**. Output handles: U64 **Pointer to Value**. Input handles: U64 **Value**. Install the native library with the packages in [`Installers/`](Installers/readme.md), then use library name `iox2_cif.dll` or `libiox2_cif.so`.
 
 Create / Start / Destroy: **Run in UI thread** (first load of this fat DLL from an execution thread can deadlock in `LoadLibrary`). Leave **Unload after call** unchecked. The DLL is pinned so closing a VI does not unmap it while the wait thread is running.
 

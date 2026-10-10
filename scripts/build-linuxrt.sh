@@ -7,7 +7,11 @@ export USER="${USER:-admin}"
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
 export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
 export PATH="$HOME/opt/cmake/bin:$CARGO_HOME/bin:/usr/bin:/bin:$PATH"
-export RUSTFLAGS="${RUSTFLAGS:--C relocation-model=pic}"
+# NI Linux RT "core2-64" includes Atom (e.g. cRIO-9057 E3805) with no AVX.
+# Building on a NUC without this produces SIGILL in LabVIEW (vmovdqu).
+export CFLAGS="${CFLAGS:--O2 -fPIC -march=core2}"
+export CXXFLAGS="${CXXFLAGS:--O2 -fPIC -march=core2}"
+export RUSTFLAGS="${RUSTFLAGS:--C relocation-model=pic -C target-cpu=core2}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-$ROOT/build-linuxrt}"
@@ -19,6 +23,8 @@ echo "Root: $ROOT"
 echo "cmake: $(command -v cmake) ($(cmake --version | head -1))"
 echo "rustc: $(command -v rustc) ($(rustc --version))"
 echo "cargo: $(command -v cargo) ($(cargo --version))"
+echo "CFLAGS=$CFLAGS"
+echo "RUSTFLAGS=$RUSTFLAGS"
 
 if [ ! -f "$IOX2_DIR/CMakeLists.txt" ]; then
     mkdir -p "$(dirname "$IOX2_DIR")"
@@ -29,6 +35,8 @@ mkdir -p "$BUILD_DIR" "$DIST_DIR"
 
 cmake -S "$ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS="$CFLAGS" \
+    -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
     -DBUILD_CXX=OFF \
     -DBUILD_EXAMPLES=OFF \
     -DBUILD_TESTING=OFF \

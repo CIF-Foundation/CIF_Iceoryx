@@ -1,12 +1,8 @@
 # LabVIEW — call the CIF wrapper (`iox2_cif.dll`) on Windows
 
-64-bit LabVIEW only. The DLL is cdecl. After `scripts/build.ps1` succeeds, point Call Library Function nodes at:
+64-bit LabVIEW only. The DLL is cdecl. After the Windows installer runs, point Call Library Function nodes at the library name `iox2_cif.dll` (installed to `C:\Program Files\CIF_Foundation\Libraries\iox2_cif.dll`). For local development after `scripts/build.ps1`, you can still point at `dist\iox2_cif.dll`.
 
-```
-D:\dev\iceoryx2_lvwrapper\dist\iox2_cif.dll
-```
-
-That is the only native binary to ship (iceoryx2 is linked into it).
+That is the only native binary to ship (iceoryx2 is linked into it). See [`Installers/readme.md`](../Installers/readme.md).
 
 If a node **never returns on the first call**, abort LabVIEW and set create/start/destroy to **Run in UI thread**. First-load of this fat DLL from a LabVIEW execution thread can deadlock in `LoadLibrary` (Rust runtime vs Windows loader lock). That hang is before any wrapper code runs; lock timeouts cannot catch it. Hot-path read/write can stay **Run in any thread**.
 
@@ -122,7 +118,7 @@ Optional: `iox2_cif_init("cif")` once at start; `iox2_cif_shutdown` when done. I
 ## Notes for this prototype
 
 - Use **pointer + count** (`iox2_cif_bb_write` / `read` / `read_raw`) on all targets. Resize LabVIEW arrays in the VI before the copy.
-- Keep the DLL path stable, or copy `iox2_cif.dll` next to the VI / into `LabVIEW\resource`.
+- Keep the DLL path stable. The installer puts `iox2_cif.dll` in `C:\Program Files\CIF_Foundation\Libraries\`. Use the library name only, or that full path.
 - Destroy the blackboard in the writer process before creating a new one with the same name **if** you need a different topic set. Same schema can **Start** again (reopen) while readers remain.
 - Cluster payloads later: pass Adapt to Type on a **flat** cluster, `type_name` required (e.g. `RobotPose`), `elem_size` / `elem_align` from LabVIEW’s cluster size.
 
@@ -178,6 +174,6 @@ Build the shared library on the RT target (needs SSH, gcc, and internet for the 
 powershell -ExecutionPolicy Bypass -File D:\dev\iceoryx2_lvwrapper\scripts\build-linuxrt.ps1
 ```
 
-That produces `dist\libiox2_cif.so` and also installs it on the target as `/usr/local/lib/libiox2_cif.so` and `/home/lvuser/libiox2_cif.so`.
+That produces `dist\libiox2_cif.so`. The development script also copies it to `/usr/local/lib/libiox2_cif.so` and `/home/lvuser/libiox2_cif.so` on the build target. Ship with the IPK (`Installers\build_cif_iox2_ipk.bat`), which installs `/usr/lib/cif/libiox2_cif.so` and a symlink at `/usr/lib/libiox2_cif.so`.
 
 LabVIEW Real-Time Call Library Function: library name `libiox2_cif.so` (or the full path), calling convention C, same prototypes as Windows. The RT UI-thread vs any-thread LoadLibrary deadlock does not apply the same way; still keep create/start/destroy off the hot path.

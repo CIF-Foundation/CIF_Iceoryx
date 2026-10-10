@@ -1,0 +1,3 @@
+cif-iox2 includes iceoryx2 (https://github.com/eclipse-iceoryx/iceoryx2),
+copyright Eclipse iceoryx2 contributors, licensed under Apache-2.0 or MIT.
+The iceoryx2 C FFI is statically linked into iox2_cif.dll / libiox2_cif.so.

@@ -1,0 +1,4 @@
+chmod 777 /usr/lib/cif/libiox2_cif.so
+ln -s /usr/lib/cif/libiox2_cif.so /usr/lib/libiox2_cif.so
+
+ldconfig
