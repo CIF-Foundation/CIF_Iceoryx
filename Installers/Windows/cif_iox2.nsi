@@ -4,7 +4,7 @@
 !include "MUI2.nsh"
 
 !define PRODUCT_NAME "CIF Iceoryx"
-!define PRODUCT_VERSION "0.1.0"
+!define PRODUCT_VERSION "0.1.1"
 !define PACKAGE_NAME "cif-iox2"
 !define PRODUCT_PUBLISHER "Dome Automation"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\CIF_IOX2"

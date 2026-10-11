@@ -20,7 +20,6 @@
 			<Item Name="Test CIF pcap PubSub.vi" Type="VI" URL="../Test CIF pcap PubSub.vi"/>
 			<Item Name="Test Raw PubSub.vi" Type="VI" URL="../Test Raw PubSub.vi"/>
 		</Item>
-		<Item Name="Iceoryx.lvlib" Type="Library" URL="../../Iceoryx.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Assert Error Cluster Type.vim" Type="VI" URL="/&lt;vilib&gt;/Utility/TypeAssert/Assert Error Cluster Type.vim"/>
@@ -37,6 +36,7 @@
 				<Item Name="Trim Whitespace.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Trim Whitespace.vi"/>
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
 			</Item>
+			<Item Name="Iceoryx.lvlib" Type="Library" URL="../../Iceoryx.lvlib"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
@@ -118,14 +118,7 @@ AddOutputFilter chunkFilter
 		<Property Name="target.webservices.SecurityAPIKey" Type="Str">PqVr/ifkAQh+lVrdPIykXlFvg12GhhQFR8H9cUhphgg=:pTe9HRlQuMfJxAG6QCGq7UvoUpJzAzWGKy5SbZ+roSU=</Property>
 		<Property Name="target.webservices.ValidTimestampWindow" Type="Int">15</Property>
 		<Item Name="trash_Test naming function.vi" Type="VI" URL="../../trash/trash_Test naming function.vi"/>
-		<Item Name="Dependencies" Type="Dependencies">
-			<Item Name="vi.lib" Type="Folder">
-				<Item Name="DataTypes_CIF_U.lvlib" Type="Library" URL="/&lt;vilib&gt;/CIF Foundation/CIF Utilities/DataTypes/DataTypes_CIF_U.lvlib"/>
-				<Item Name="Error Cluster From Error Code.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Error Cluster From Error Code.vi"/>
-				<Item Name="NI_Data Type.lvlib" Type="Library" URL="/&lt;vilib&gt;/Utility/Data Type/NI_Data Type.lvlib"/>
-				<Item Name="Space Constant.vi" Type="VI" URL="/&lt;vilib&gt;/dlg_ctls.llb/Space Constant.vi"/>
-			</Item>
-		</Item>
+		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
 </Project>
