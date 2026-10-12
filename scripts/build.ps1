@@ -35,8 +35,10 @@ if (-not (Test-Path (Join-Path $iox2 "CMakeLists.txt"))) {
 $vcvars = Find-VcVars64
 Write-Host "Using $vcvars"
 
+$version = (Get-Content (Join-Path $Root "VERSION") -Raw).Trim()
+$dllName = "iox2_cif-windows-$version.dll"
 $buildDir = Join-Path $Root "build"
-$distDir = Join-Path $Root "dist"
+$distDir = Join-Path $Root "dist\windows"
 New-Item -ItemType Directory -Force -Path $buildDir, $distDir | Out-Null
 
 $bat = Join-Path $buildDir "_build.bat"
@@ -60,7 +62,7 @@ if (-not $dll) {
 $smoke = Get-ChildItem -Path $buildDir -Recurse -Filter iox2_cif_smoke.exe | Select-Object -First 1
 if (-not $dll) { throw "iox2_cif.dll not found under $buildDir" }
 
-Copy-Item $dll.FullName (Join-Path $distDir "iox2_cif.dll") -Force
+Copy-Item $dll.FullName (Join-Path $distDir $dllName) -Force
 $staleFfi = Join-Path $distDir "iceoryx2_ffi_c.dll"
 if (Test-Path $staleFfi) {
     Remove-Item $staleFfi -Force -ErrorAction SilentlyContinue
@@ -68,7 +70,7 @@ if (Test-Path $staleFfi) {
 Copy-Item (Join-Path $Root "native\include\iox2_cif.h") (Join-Path $distDir "iox2_cif.h") -Force
 
 Write-Host "DLL: $($dll.FullName)"
-Write-Host "Copied to: $distDir\iox2_cif.dll"
+Write-Host "Copied to: $distDir\$dllName"
 
 if ($smoke) {
     Write-Host "Running smoke test..."
@@ -82,5 +84,5 @@ if ($smoke) {
     Write-Host "Smoke test passed."
 }
 
-Write-Host "Done. Point LabVIEW Call Library Function nodes at:"
-Write-Host "  $distDir\iox2_cif.dll"
+Write-Host "Done. Installer will symlink iox2_cif.dll -> $dllName"
+Write-Host "  $distDir\$dllName"

@@ -13,12 +13,12 @@ Build (Windows DLL + smoke test):
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-That writes `dist\iox2_cif.dll`. Linux RT: `scripts\build-linuxrt.ps1` → `dist\libiox2_cif.so`.
+That writes `dist\windows\iox2_cif-windows-<version>.dll`. Linux RT: `scripts\build-linuxrt.ps1` → `dist\linuxrt\libiox2_cif-linuxrt.so.<version>`. Ubuntu 20.04: `scripts\build-ubuntu2004.ps1` → `dist\ubuntu\libiox2_cif-ubuntu.so.<version>`.
 
-Native installers ([`Installers/readme.md`](Installers/readme.md)) place those libraries for LabVIEW:
+Native installers ([`Installers/readme.md`](Installers/readme.md)) install the versioned file and symlink the LabVIEW names:
 
-- **Windows:** `C:\Program Files\CIF_Foundation\Libraries\iox2_cif.dll`
-- **Linux RT / Ubuntu:** `/usr/lib/cif/libiox2_cif.so` with a symlink at `/usr/lib/libiox2_cif.so`
+- **Windows:** `C:\Program Files\CIF_Foundation\Libraries\iox2_cif-windows-<version>.dll` → `iox2_cif.dll`
+- **Linux RT / Ubuntu:** `/usr/lib/cif/libiox2_cif-<platform>.so.<version>` → `/usr/lib/cif/libiox2_cif.so` and `/usr/lib/libiox2_cif.so`
 
 Call Library Function nodes should use the library name only (`iox2_cif.dll` / `libiox2_cif.so`).
 

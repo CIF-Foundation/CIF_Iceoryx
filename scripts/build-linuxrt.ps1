@@ -21,7 +21,7 @@ $tar = Join-Path $env:TEMP "iox2_cif_linuxrt.tar"
 if (Test-Path $tar) { Remove-Item $tar -Force }
 Push-Location $Root
 try {
-    tar -cf $tar CMakeLists.txt native scripts
+    tar -cf $tar CMakeLists.txt native scripts VERSION
 } finally {
     Pop-Location
 }
@@ -36,13 +36,15 @@ Write-Host "Building on $Target (core2, no AVX; first iceoryx2/Rust compile can 
 # Atom cRIO (e.g. 9057 E3805) has no AVX. Force a clean configure so CFLAGS apply.
 Invoke-Rt "cd $RemoteRoot && rm -rf build-linuxrt && export CFLAGS='-O2 -fPIC -march=core2' CXXFLAGS='-O2 -fPIC -march=core2' RUSTFLAGS='-C relocation-model=pic -C target-cpu=core2' && bash scripts/build-linuxrt.sh"
 
-$distDir = Join-Path $Root "dist"
+$version = (Get-Content (Join-Path $Root "VERSION") -Raw).Trim()
+$soName = "libiox2_cif-linuxrt.so.$version"
+$distDir = Join-Path $Root "dist\linuxrt"
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-Write-Host "Copying libiox2_cif.so back to dist..."
-scp -o ConnectTimeout=15 "${Target}:${RemoteRoot}/dist/libiox2_cif.so" (Join-Path $distDir "libiox2_cif.so")
-scp -o ConnectTimeout=15 "${Target}:${RemoteRoot}/dist/iox2_cif.h" (Join-Path $distDir "iox2_cif.h")
+Write-Host "Copying $soName back to dist\linuxrt..."
+scp -o ConnectTimeout=15 "${Target}:${RemoteRoot}/dist/linuxrt/$soName" (Join-Path $distDir $soName)
+scp -o ConnectTimeout=15 "${Target}:${RemoteRoot}/dist/linuxrt/iox2_cif.h" (Join-Path $distDir "iox2_cif.h")
 
-Write-Host "Done. LabVIEW RT Call Library Function library:"
-Write-Host "  $(Join-Path $distDir 'libiox2_cif.so')"
+Write-Host "Done. LabVIEW RT library (installer symlinks libiox2_cif.so):"
+Write-Host "  $(Join-Path $distDir $soName)"
 Write-Host "On the target it is also at:"
-Write-Host "  $RemoteRoot/dist/libiox2_cif.so"
+Write-Host "  $RemoteRoot/dist/linuxrt/$soName"

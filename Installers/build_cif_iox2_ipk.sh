@@ -29,10 +29,11 @@ IPK_TEMPLATE="${SCRIPT_DIR}/cif_iox2_ipk"
 STAGING_DIR="${SCRIPT_DIR}/staging/cif_iox2_ipk"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
 BUILD_IPK="${SCRIPT_DIR}/build_ipk.sh"
-SO_NAME="libiox2_cif.so"
+VERSION="$(tr -d ' \t\r\n' < "${REPO_ROOT}/VERSION")"
+SO_NAME="libiox2_cif-linuxrt.so.${VERSION}"
 TEMPLATE_SO="${IPK_TEMPLATE}/usr/lib/cif/${SO_NAME}"
 STAGING_SO="${STAGING_DIR}/usr/lib/cif/${SO_NAME}"
-DIST_SO="${REPO_ROOT}/dist/${SO_NAME}"
+DIST_SO="${REPO_ROOT}/dist/linuxrt/${SO_NAME}"
 
 if ! command -v python3 >/dev/null 2>&1; then
   echo "Error: python3 is required for line-ending normalization" >&2
@@ -68,6 +69,7 @@ elif [[ ! -f "${TEMPLATE_SO}" ]]; then
     echo "Error: Shared library not found at ${TEMPLATE_SO} or ${DIST_SO}" >&2
     echo "Build the RT library first:" >&2
     echo "  powershell -ExecutionPolicy Bypass -File .\\scripts\\build-linuxrt.ps1" >&2
+    echo "Expected ${DIST_SO}" >&2
     echo "Or place ${SO_NAME} in the IPK template, or set SO_SOURCE." >&2
     exit 1
   fi

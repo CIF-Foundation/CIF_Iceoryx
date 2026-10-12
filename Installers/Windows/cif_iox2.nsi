@@ -1,10 +1,17 @@
 ; CIF Iceoryx Windows installer
-; Installs iox2_cif.dll to a fixed location under Program Files.
+; Installs a versioned DLL and creates iox2_cif.dll as a symlink.
 
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
+
+!ifndef PRODUCT_VERSION
+  !define PRODUCT_VERSION "0.1.2.0"
+!endif
+!ifndef DLL_VERSIONED
+  !define DLL_VERSIONED "iox2_cif-windows-${PRODUCT_VERSION}.dll"
+!endif
 
 !define PRODUCT_NAME "CIF Iceoryx"
-!define PRODUCT_VERSION "0.1.1"
 !define PACKAGE_NAME "cif-iox2"
 !define PRODUCT_PUBLISHER "Dome Automation"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\CIF_IOX2"
@@ -32,9 +39,16 @@ ShowUnInstDetails show
 
 Section "Install"
   SetOutPath "${INSTALL_DIR}"
-  File "resource\iox2_cif.dll"
+  File "resource\${DLL_VERSIONED}"
   File "${LICENSE_FILE}"
   File "..\NOTICE"
+
+  Delete "${INSTALL_DIR}\iox2_cif.dll"
+  nsExec::ExecToLog 'cmd /c mklink "${INSTALL_DIR}\iox2_cif.dll" "${DLL_VERSIONED}"'
+  Pop $0
+  ${If} $0 != 0
+    CopyFiles /SILENT "${INSTALL_DIR}\${DLL_VERSIONED}" "${INSTALL_DIR}\iox2_cif.dll"
+  ${EndIf}
 
   WriteUninstaller "${INSTALL_DIR}\${UNINSTALLER_NAME}"
 
@@ -49,6 +63,7 @@ SectionEnd
 
 Section "Uninstall"
   Delete "${INSTALL_DIR}\iox2_cif.dll"
+  Delete "${INSTALL_DIR}\${DLL_VERSIONED}"
   Delete "${INSTALL_DIR}\LICENSE-APACHE"
   Delete "${INSTALL_DIR}\NOTICE"
   Delete "${INSTALL_DIR}\${UNINSTALLER_NAME}"

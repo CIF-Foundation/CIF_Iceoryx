@@ -1,1 +1,3 @@
-unlink /usr/lib/libiox2_cif.so
+#!/bin/sh
+unlink /usr/lib/libiox2_cif.so 2>/dev/null || true
+unlink /usr/lib/cif/libiox2_cif.so 2>/dev/null || true

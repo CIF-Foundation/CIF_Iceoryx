@@ -24,6 +24,7 @@ __pycache__/
 # C wrapper build
 /build/
 /build-linuxrt/
+/build-ubuntu2004/
 /dist/
 /Installers/output/
 /Installers/staging/

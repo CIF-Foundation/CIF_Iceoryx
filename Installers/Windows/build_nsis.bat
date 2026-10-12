@@ -9,15 +9,17 @@ if not exist "%NSIS%" (
 
 set "SCRIPT_DIR=%~dp0"
 set "REPO_DIR=%SCRIPT_DIR%..\.."
-set "RESOURCE_DLL=%SCRIPT_DIR%resource\iox2_cif.dll"
-set "DIST_DLL=%REPO_DIR%\dist\iox2_cif.dll"
+set /p VERSION=<"%REPO_DIR%\VERSION"
+set "DLL_VERSIONED=iox2_cif-windows-%VERSION%.dll"
+set "RESOURCE_DLL=%SCRIPT_DIR%resource\%DLL_VERSIONED%"
+set "DIST_DLL=%REPO_DIR%\dist\windows\%DLL_VERSIONED%"
 
 if not exist "%RESOURCE_DLL%" (
   if exist "%DIST_DLL%" (
     echo Copying %DIST_DLL% to resource...
     copy /Y "%DIST_DLL%" "%RESOURCE_DLL%" >nul
   ) else (
-    echo Error: iox2_cif.dll not found at "%RESOURCE_DLL%" or "%DIST_DLL%"
+    echo Error: %DLL_VERSIONED% not found at "%RESOURCE_DLL%" or "%DIST_DLL%"
     echo Build the Windows library first:
     echo   powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
     exit /b 1
@@ -25,12 +27,12 @@ if not exist "%RESOURCE_DLL%" (
 )
 
 pushd "%SCRIPT_DIR%"
-"%NSIS%" "cif_iox2.nsi"
+"%NSIS%" /DPRODUCT_VERSION=%VERSION% /DDLL_VERSIONED=%DLL_VERSIONED% "cif_iox2.nsi"
 if errorlevel 1 (
   popd
   exit /b 1
 )
 
-echo Successfully created cif-iox2-0.1.0.exe
+echo Successfully created cif-iox2-%VERSION%.exe
 popd
 endlocal

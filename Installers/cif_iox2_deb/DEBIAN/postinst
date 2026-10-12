@@ -1,4 +1,11 @@
-chmod 777 /usr/lib/cif/libiox2_cif.so
-ln -s /usr/lib/cif/libiox2_cif.so /usr/lib/libiox2_cif.so
-
+#!/bin/sh
+set -e
+SO="$(ls /usr/lib/cif/libiox2_cif-ubuntu.so.* 2>/dev/null | head -1)"
+if [ -z "$SO" ]; then
+    echo "libiox2_cif-ubuntu.so.* not found in /usr/lib/cif" >&2
+    exit 1
+fi
+chmod 777 "$SO"
+ln -sfn "$SO" /usr/lib/cif/libiox2_cif.so
+ln -sfn /usr/lib/cif/libiox2_cif.so /usr/lib/libiox2_cif.so
 ldconfig

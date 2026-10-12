@@ -7,7 +7,7 @@
 # Installers/output/.
 #
 # This script does not compile the native library. Build it first:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\build-ubuntu2004.ps1
 #
 # Usage:
 #   bash Installers/build_deb.sh
@@ -18,9 +18,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DEB_TEMPLATE="${SCRIPT_DIR}/cif_iox2_deb"
 OUTPUT_DIR="${SCRIPT_DIR}/output"
-SO_NAME="libiox2_cif.so"
+VERSION="$(tr -d ' \t\r\n' < "${REPO_ROOT}/VERSION")"
+SO_NAME="libiox2_cif-ubuntu.so.${VERSION}"
 TEMPLATE_SO="${DEB_TEMPLATE}/usr/lib/cif/${SO_NAME}"
-DIST_SO="${REPO_ROOT}/dist/${SO_NAME}"
+DIST_SO="${REPO_ROOT}/dist/ubuntu/${SO_NAME}"
 
 if [[ ! -d "${DEB_TEMPLATE}/DEBIAN" ]]; then
   echo "Error: Debian template not found at ${DEB_TEMPLATE}" >&2
@@ -44,14 +45,15 @@ elif [[ -f "${DIST_SO}" ]]; then
   echo "Using shared library from dist: ${SO_SOURCE}" >&2
 else
   echo "Error: Shared library not found at ${TEMPLATE_SO} or ${DIST_SO}" >&2
-  echo "Build the Linux library first (scripts/build-linuxrt.ps1), place" >&2
-  echo "${SO_NAME} in the Debian template, or set SO_SOURCE." >&2
+  echo "Build the Ubuntu 20.04 library first (scripts/build-ubuntu2004.ps1)." >&2
+  echo "Expected ${DIST_SO}" >&2
+  echo "Or place ${SO_NAME} in the Debian template, or set SO_SOURCE." >&2
   exit 1
 fi
 
-PKG="$(grep '^Package:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}')"
-VERSION="$(grep '^Version:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}')"
-ARCH="$(grep '^Architecture:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}')"
+PKG="$(grep '^Package:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}' | tr -d '\r')"
+VERSION="$(grep '^Version:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}' | tr -d '\r')"
+ARCH="$(grep '^Architecture:' "${DEB_TEMPLATE}/DEBIAN/control" | awk '{print $2}' | tr -d '\r')"
 if [[ -z "${PKG}" || -z "${VERSION}" || -z "${ARCH}" ]]; then
   echo "Error: Could not read Package, Version, and Architecture from ${DEB_TEMPLATE}/DEBIAN/control" >&2
   exit 1

@@ -14,8 +14,10 @@ export CXXFLAGS="${CXXFLAGS:--O2 -fPIC -march=core2}"
 export RUSTFLAGS="${RUSTFLAGS:--C relocation-model=pic -C target-cpu=core2}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VERSION="$(tr -d ' \t\r\n' < "$ROOT/VERSION")"
 BUILD_DIR="${BUILD_DIR:-$ROOT/build-linuxrt}"
-DIST_DIR="${DIST_DIR:-$ROOT/dist}"
+DIST_DIR="${DIST_DIR:-$ROOT/dist/linuxrt}"
+SO_NAME="libiox2_cif-linuxrt.so.${VERSION}"
 IOX2_DIR="$ROOT/third_party/iceoryx2"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 2)}"
 
@@ -25,6 +27,8 @@ echo "rustc: $(command -v rustc) ($(rustc --version))"
 echo "cargo: $(command -v cargo) ($(cargo --version))"
 echo "CFLAGS=$CFLAGS"
 echo "RUSTFLAGS=$RUSTFLAGS"
+echo "VERSION=$VERSION"
+echo "SO_NAME=$SO_NAME"
 
 if [ ! -f "$IOX2_DIR/CMakeLists.txt" ]; then
     mkdir -p "$(dirname "$IOX2_DIR")"
@@ -51,18 +55,21 @@ if [ -z "$SO" ]; then
     exit 1
 fi
 
-cp -f "$SO" "$DIST_DIR/libiox2_cif.so"
+cp -f "$SO" "$DIST_DIR/$SO_NAME"
 cp -f "$ROOT/native/include/iox2_cif.h" "$DIST_DIR/iox2_cif.h"
-echo "Copied $SO -> $DIST_DIR/libiox2_cif.so"
+ln -sfn "$SO_NAME" "$DIST_DIR/libiox2_cif.so"
+echo "Copied $SO -> $DIST_DIR/$SO_NAME"
 
 if [ "$(id -u)" = 0 ]; then
-    install -m 0755 "$DIST_DIR/libiox2_cif.so" /usr/local/lib/libiox2_cif.so
+    install -m 0755 "$DIST_DIR/$SO_NAME" "/usr/local/lib/$SO_NAME"
+    ln -sfn "/usr/local/lib/$SO_NAME" /usr/local/lib/libiox2_cif.so
     ldconfig >/dev/null 2>&1 || true
-    echo "Installed /usr/local/lib/libiox2_cif.so"
+    echo "Installed /usr/local/lib/$SO_NAME -> libiox2_cif.so"
     if [ -d /home/lvuser ]; then
-        install -o lvuser -g ni -m 0755 "$DIST_DIR/libiox2_cif.so" /home/lvuser/libiox2_cif.so || \
-            install -m 0755 "$DIST_DIR/libiox2_cif.so" /home/lvuser/libiox2_cif.so
-        echo "Installed /home/lvuser/libiox2_cif.so"
+        install -o lvuser -g ni -m 0755 "$DIST_DIR/$SO_NAME" "/home/lvuser/$SO_NAME" || \
+            install -m 0755 "$DIST_DIR/$SO_NAME" "/home/lvuser/$SO_NAME"
+        ln -sfn "/home/lvuser/$SO_NAME" /home/lvuser/libiox2_cif.so
+        echo "Installed /home/lvuser/$SO_NAME -> libiox2_cif.so"
     fi
 fi
 
@@ -72,6 +79,6 @@ if [ -n "$SMOKE" ]; then
     echo "Smoke test passed."
 fi
 
-echo "Done: $DIST_DIR/libiox2_cif.so"
-file "$DIST_DIR/libiox2_cif.so" || true
-ldd "$DIST_DIR/libiox2_cif.so" || true
+echo "Done: $DIST_DIR/$SO_NAME"
+file "$DIST_DIR/$SO_NAME" || true
+ldd "$DIST_DIR/$SO_NAME" || true
