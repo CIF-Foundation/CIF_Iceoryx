@@ -35,6 +35,8 @@
 		<Item Name="CIF Pcap Publish Advanced.ctl" Type="VI" URL="../typedef/CIF Pcap Publish Advanced.ctl"/>
 		<Item Name="CIF Pcap Publisher Stats.ctl" Type="VI" URL="../typedef/CIF Pcap Publisher Stats.ctl"/>
 		<Item Name="CIF Pcap Subscriber Stats.ctl" Type="VI" URL="../typedef/CIF Pcap Subscriber Stats.ctl"/>
+		<Item Name="CIF Pcap Subscriber Advanced.ctl" Type="VI" URL="../typedef/CIF Pcap Subscriber Advanced.ctl"/>
+		<Item Name="CIF Pcap Publish Advanced w Header.ctl" Type="VI" URL="../typedef/CIF Pcap Publish Advanced w Header.ctl"/>
 	</Item>
 	<Item Name="Blackboard" Type="Folder">
 		<Item Name="Create Blackboard.vi" Type="VI" URL="../Blackboard/Create Blackboard.vi"/>
@@ -45,6 +47,7 @@
 		<Item Name="Create Raw Writer.vi" Type="VI" URL="../Blackboard/Create Raw Writer.vi"/>
 		<Item Name="Create Reader.vim" Type="VI" URL="../Blackboard/Create Reader.vim"/>
 		<Item Name="Create Raw Reader.vi" Type="VI" URL="../Blackboard/Create Raw Reader.vi"/>
+		<Item Name="Create Abstracted Reader.vi" Type="VI" URL="../Blackboard/Create Abstracted Reader.vi"/>
 		<Item Name="Write.vim" Type="VI" URL="../Blackboard/Write.vim"/>
 		<Item Name="Write Raw.vi" Type="VI" URL="../Blackboard/Write Raw.vi"/>
 		<Item Name="Read.vim" Type="VI" URL="../Blackboard/Read.vim"/>
@@ -68,7 +71,11 @@
 			<Item Name="Create CIF Publisher.vi" Type="VI" URL="../PubSub/CIF pcap/Create CIF Publisher.vi"/>
 			<Item Name="Create CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Create CIF Subscriber.vi"/>
 			<Item Name="CIF Publish.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Publish.vi"/>
-			<Item Name="CIF Recieve.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Recieve.vi"/>
+			<Item Name="CIF Publish Raw.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Publish Raw.vi"/>
+			<Item Name="CIF Publish with PCAP Header.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Publish with PCAP Header.vi"/>
+			<Item Name="CIF Receive.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Receive.vi"/>
+			<Item Name="CIF Receive Raw.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Receive Raw.vi"/>
+			<Item Name="CIF Receive with PCAP Header.vi" Type="VI" URL="../PubSub/CIF pcap/CIF Receive with PCAP Header.vi"/>
 			<Item Name="Destroy CIF Publisher.vi" Type="VI" URL="../PubSub/CIF pcap/Destroy CIF Publisher.vi"/>
 			<Item Name="Destroy CIF Subscriber.vi" Type="VI" URL="../PubSub/CIF pcap/Destroy CIF Subscriber.vi"/>
 			<Item Name="Get CIF Subscriber Count.vi" Type="VI" URL="../PubSub/CIF pcap/Get CIF Subscriber Count.vi"/>
@@ -111,5 +118,4 @@
 		<Item Name="BB Raw Reader to Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader to Refnum.vi"/>
 		<Item Name="BB Raw Reader from Refnum.vi" Type="VI" URL="../Refnum/BB Raw Reader from Refnum.vi"/>
 	</Item>
-	<Item Name="Create Abstracted Reader.vi" Type="VI" URL="../Blackboard/Create Abstracted Reader.vi"/>
 </Library>

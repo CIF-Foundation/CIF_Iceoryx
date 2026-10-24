@@ -273,10 +273,11 @@ Interface-descriptor JSON is stored by the wrapper in a sidecar file (not an ice
 
 Raw `iox2_cif_ps_*` is typed pointer+count (same BE/BP and Event+WaitSet as planned). CIF-pcap is a second ABI on the same iceoryx2 services (`{name}/{topic}.iox2_cif.ps.be` / `.bp`):
 
-- On-wire: 48-byte `iox2_cif_pcap_hdr_t` then opaque pcap records (no global header, no `iox2_cif_slot_t`).
+- On-wire: 48-byte `iox2_cif_pcap_hdr_t`, optional agreed-size `pcap_header`, then opaque pcap records (no global header, no `iox2_cif_slot_t`). `hdr.length` stays `48 +` pcap-record bytes; `pcap_header_len` is not stored in the CIF header.
 - Typed type `iox2_cif.pcap.<linktype>`; universal type `iox2_cif.pcap` (writer create with `IOX2_CIF_PCAP_LINKTYPE_ANY`).
 - Typed subscribers accept an exact type or a universal writer. Universal subscribers accept any pcap type. Typed-to-typed LinkType mismatch is 8106.
-- Write stamps `length` and `ctr` only. Subscriber/writer stats and subscriber-only flush are pcap-only.
+- Write stamps `length` (`48 +` pcap-record bytes) and `ctr` only. `pcap_header_len` is agreed out of band. Subscriber/writer stats and subscriber-only flush are pcap-only.
+- `write_raw` / `receive_raw` copy the whole on-wire sample as opaque U8 (header + records) for remote transport. Same stamp and BE/BP rules as the split calls.
 - One writer per `(name, topic)` for both raw and pcap.
 
 Same `(name, topic)` must not mix blackboard, raw, and pcap.
@@ -333,3 +334,5 @@ docs/abi.md      extracted ABI tables once implementation starts (optional)
 | v5 | Start reopen when schema matches and writer slot empty |
 | v6 | Subset reopen; Destroy Blackboard invalidates writers; FNV-1a key ABI; no attribute catalog |
 | v7 | Raw `iox2_cif_ps_*` plus CIF-pcap `iox2_cif_pcap_*` (48-byte header + pcap records, universal type) |
+| v8 | CIF-pcap `write_raw` / `receive_raw` whole-sample U8 buffers for remote transport |
+| v9 | CIF-pcap `write` / `receive` optional agreed-size `pcap_header` U8 prefix |

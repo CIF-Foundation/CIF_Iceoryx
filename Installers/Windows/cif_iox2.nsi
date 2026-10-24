@@ -5,7 +5,7 @@
 !include "LogicLib.nsh"
 
 !ifndef PRODUCT_VERSION
-  !define PRODUCT_VERSION "0.1.2.0"
+  !define PRODUCT_VERSION "0.1.4.0"
 !endif
 !ifndef DLL_VERSIONED
   !define DLL_VERSIONED "iox2_cif-windows-${PRODUCT_VERSION}.dll"

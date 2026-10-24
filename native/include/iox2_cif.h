@@ -95,6 +95,12 @@ extern "C" {
  *
  * `iox2_cif_bb_read` / `write` use elements.
  * `iox2_cif_bb_read_raw` / `iox2_cif_bb_read_raw_at` use bytes.
+ * `iox2_cif_pcap_write` / `receive` length / actual / max / cap are pcap-record
+ * bytes (not including the 48-byte CIF header or the optional pcap_header).
+ * `pcap_header_len` is the agreed prefix size in bytes (same on writer and
+ * reader; not stored in iox2_cif_pcap_hdr_t).
+ * `iox2_cif_pcap_write_raw` / `receive_raw` length / actual / max / cap are
+ * full sample bytes (48-byte CIF header + optional pcap_header + records).
  * `iox2_cif_status_text` / `iox2_cif_bb_topic_info` buf_len / out_len are bytes
  * (out_len is strlen, not including the terminating NUL).
  */
@@ -622,7 +628,7 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_ps_info(
 /* -------------------------------------------------------------------------- */
 /* CIF-pcap pub/sub                                                             */
 /*                                                                            */
-/* Sample: 48-byte iox2_cif_pcap_hdr_t + pcap records (no global header).     */
+/* Sample: 48-byte iox2_cif_pcap_hdr_t + optional pcap_header + pcap records. */
 /* Typed type_name iox2_cif.pcap.<linktype>; universal iox2_cif.pcap.         */
 /* LINKTYPE_ANY on writer create originates a universal stream.               */
 /* One writer per (name, topic), same as raw pub/sub.                         */
@@ -665,11 +671,43 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_info(
     uint32_t* be_subscriber_buffer,
     uint32_t* bp_subscriber_buffer);
 
+/**
+ * Publish CIF header, then optional `pcap_header`, then pcap records.
+ * `pcap_header` and `pcap` are concatenated in the sample after the 48-byte
+ * CIF header. `length` is pcap-record bytes only. `pcap_header_len` is the
+ * agreed prefix size (not stamped into the CIF header). Writer and reader
+ * must pass the same `pcap_header_len`. `pcap_header_len + length` must be
+ * <= `max_pcap_bytes` or the call returns 8108.
+ */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_write(
     uint64_t writer,
     const void* header,
+    const void* pcap_header,
+    uint32_t pcap_header_len,
     const void* pcap,
     uint32_t offset,
+    uint32_t length,
+    uint32_t timeout_ms,
+    int32_t* timed_out,
+    uint64_t* samples,
+    uint64_t* timeouts);
+
+/**
+ * Publish a whole CIF-pcap sample as opaque bytes: 48-byte header, then pcap
+ * records. Intended for remote transport (TCP and similar): pass the buffer
+ * from `iox2_cif_pcap_receive_raw` (or an equivalent flatten) unchanged.
+ *
+ * Same BE/BP send rules as `iox2_cif_pcap_write`. Stamps `length` (this
+ * `length` argument) and `ctr` (this writer). Leaves `t0` / `t_out` / `t_tx` /
+ * `clock_id` from the buffer. Zeros `reserved`.
+ *
+ * `length` is full sample bytes, including the header, and must be >= 48.
+ * `length - 48` must be <= the writer's `max_pcap_bytes` or the call returns
+ * 8108 (no truncate). LabVIEW: U8 Array Data Pointer.
+ */
+IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_write_raw(
+    uint64_t writer,
+    const void* sample,
     uint32_t length,
     uint32_t timeout_ms,
     int32_t* timed_out,
@@ -684,11 +722,40 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_writer_stats_reset(uint
 /**
  * Same timeout / timed_out rules as iox2_cif_ps_receive: no valid sample →
  * status 0, actual 0, timed_out 1 (including timeout_ms 0).
+ *
+ * `pcap_header_len` must match the writer's agreed prefix size. `actual` is
+ * pcap-record bytes only (not including the CIF header or pcap_header).
  */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_receive(
     uint64_t subscriber,
     void* header,
+    void* pcap_header,
+    uint32_t pcap_header_len,
     void* pcap,
+    uint32_t cap,
+    uint32_t timeout_ms,
+    uint32_t* actual,
+    uint32_t* max,
+    int32_t* timed_out,
+    uint64_t* samples,
+    uint64_t* dropped,
+    uint64_t* timeouts);
+
+/**
+ * Receive a whole CIF-pcap sample as opaque bytes (header + records). Same
+ * timeout / timed_out rules as `iox2_cif_pcap_receive`.
+ *
+ * `actual` is the full sample size (`hdr.length`, including the 48-byte
+ * header). `max` is 48 + `max_pcap_bytes`. Size the U8 array to `max` so the
+ * copy is never truncated. If `cap` < `actual`, copies `cap` bytes, still
+ * reports the full `actual`, and the sample is consumed.
+ *
+ * No sample → status 0, `actual` 0, `timed_out` 1 (including `timeout_ms` 0).
+ * LabVIEW: U8 Array Data Pointer.
+ */
+IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_receive_raw(
+    uint64_t subscriber,
+    void* sample,
     uint32_t cap,
     uint32_t timeout_ms,
     uint32_t* actual,
