@@ -1,5 +1,5 @@
 Package: cif-iox2
-Version: 0.1.2.0
+Version: 0.1.4.0
 Architecture: amd64
 Maintainer: todd.walter@domeautomation.com
 Description: Shared library for iceoryx2 blackboard and pub/sub from LabVIEW (CIF).

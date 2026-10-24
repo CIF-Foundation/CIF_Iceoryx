@@ -63,13 +63,15 @@ Do not use the same `(name, topic)` for both a blackboard and a pub/sub stream.
 
 ## CIF-pcap pub/sub
 
-Sample = 48-byte `iox2_cif_pcap_hdr_t` + pcap records (no global header). Type is `iox2_cif.pcap.<linktype>` or universal `iox2_cif.pcap` (`IOX2_CIF_PCAP_LINKTYPE_ANY` on writer create).
+Sample = 48-byte `iox2_cif_pcap_hdr_t` + optional `pcap_header` + pcap records (no global header). Type is `iox2_cif.pcap.<linktype>` or universal `iox2_cif.pcap` (`IOX2_CIF_PCAP_LINKTYPE_ANY` on writer create).
 
 ```
 iox2_cif_pcap_writer_create(name, topic, linktype, max_pcap_bytes, desc,
                             be_max_subscribers, bp_max_subscribers,
                             be_subscriber_buffer, bp_subscriber_buffer, &w)
-  iox2_cif_pcap_write(w, header, pcap, offset, length, timeout_ms, &timed_out, &samples, &timeouts)
+  iox2_cif_pcap_write(w, header, pcap_header, pcap_header_len, pcap, offset, length,
+                      timeout_ms, &timed_out, &samples, &timeouts)
+  iox2_cif_pcap_write_raw(w, sample, length, timeout_ms, &timed_out, &samples, &timeouts)
   iox2_cif_pcap_writer_stats / writer_stats_reset / writer_subscriber_count
 iox2_cif_pcap_destroy_writer(w)
 ```
@@ -77,13 +79,17 @@ iox2_cif_pcap_destroy_writer(w)
 ```
 iox2_cif_pcap_sub_create(name, topic, linktype, use_backpressure, timeout_ms, &s)
 iox2_cif_pcap_sub_open(name, topic, use_backpressure, timeout_ms, &s)
-  iox2_cif_pcap_receive(s, header, pcap, cap, timeout_ms, &actual, &max, &timed_out,
-                        &samples, &dropped, &timeouts)
+  iox2_cif_pcap_receive(s, header, pcap_header, pcap_header_len, pcap, cap, timeout_ms,
+                        &actual, &max, &timed_out, &samples, &dropped, &timeouts)
+  iox2_cif_pcap_receive_raw(s, sample, cap, timeout_ms, &actual, &max, &timed_out,
+                            &samples, &dropped, &timeouts)
   iox2_cif_pcap_stats / stats_reset / flush / has_sample
 iox2_cif_pcap_destroy_sub(s)
 ```
 
-Write stamps `length` and `ctr` only (caller supplies `t0` / `t_out` / `t_tx` / `clock_id`). BP timeout does not increment `ctr` or send BE. Flush drains this subscriber queue only.
+Write stamps CIF `length` (`48 +` pcap-record bytes) and `ctr` only (caller supplies `t0` / `t_out` / `t_tx` / `clock_id`). The optional `pcap_header` is not part of that `length` field. Writer and reader must pass the same `pcap_header_len` (not stored in the CIF header). BP timeout does not increment `ctr` or send BE. Flush drains this subscriber queue only.
+
+`write` / `receive` split the 48-byte CIF header, optional `pcap_header`, and pcap records. `length` / `actual` / `max` are record bytes only. `pcap_header` and `pcap` are concatenated after the CIF header so LabVIEW can pass two U8 arrays without flattening. `write_raw` / `receive_raw` use one U8 buffer for the whole sample. Those `length` / `actual` / `max` values include the 48-byte CIF header. Use the raw pair for remote transport: `receive_raw` on the export side, send `sample[0 .. actual)` over TCP, `write_raw` on the import side. BE vs BP is still chosen at subscriber create (`use_backpressure` 0 or 1); a writer with both maxes > 0 publishes to both queues.
 
 ## On-wire names
 

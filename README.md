@@ -157,7 +157,8 @@ Write with `count > max_count` returns `8108` (no truncate).
 | `iox2_cif_ps_info` | Probe raw or pcap stream type / max / BE and BP queue depths / value_size |
 | `iox2_cif_pcap_writer_create` | CIF-pcap writer (typed or universal). One writer per (name, topic) |
 | `iox2_cif_pcap_sub_create` / `sub_open` | Typed or universal pcap subscriber |
-| `iox2_cif_pcap_write` / `receive` | Header + pcap slice; stats outs; `timed_out` not an error |
+| `iox2_cif_pcap_write` / `receive` | CIF header + optional agreed `pcap_header` + pcap slice; `length`/`actual` are pcap bytes; `timed_out` not an error |
+| `iox2_cif_pcap_write_raw` / `receive_raw` | Whole sample as a U8 array (header + records), for remote transport |
 | `iox2_cif_pcap_stats` / `flush` | Reader metrics and queue drain |
 
 Same `(name, topic)` must not be both a blackboard and a pub/sub stream. See [`docs/C_API.md`](docs/C_API.md).

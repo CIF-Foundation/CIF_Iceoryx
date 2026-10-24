@@ -6156,93 +6156,23 @@ iox2_cif_status iox2_cif_pcap_info(
     return st;
 }
 
-iox2_cif_status iox2_cif_pcap_write(
+static iox2_cif_status pcap_publish_copy(
     uint64_t writer,
-    const void* header,
-    const void* pcap,
-    uint32_t offset,
-    uint32_t length,
+    const uint8_t* payload,
+    iox2_publisher_h be_pub,
+    iox2_publisher_h bp_pub,
+    iox2_notifier_h be_nt,
+    iox2_notifier_h bp_nt,
+    uint32_t value_size,
+    int supports_bp,
+    uint64_t stamped,
     uint32_t timeout_ms,
     int32_t* timed_out,
     uint64_t* samples,
     uint64_t* timeouts) {
-    iox2_cif_ps_writer* w = NULL;
-    uint8_t* payload = NULL;
-    iox2_cif_pcap_hdr_t hdr;
-    iox2_publisher_h be_pub = NULL;
-    iox2_publisher_h bp_pub = NULL;
-    iox2_notifier_h be_nt = NULL;
-    iox2_notifier_h bp_nt = NULL;
-    uint32_t value_size = 0;
-    int supports_bp = 0;
-    uint64_t stamped = 0;
     int did_timeout = 0;
     int send_ok = 0;
     iox2_cif_status st = IOX2_CIF_OK;
-
-    if (timed_out == NULL || samples == NULL || timeouts == NULL) {
-        return IOX2_CIF_ERR_INVALID_ARGUMENT;
-    }
-    st = store_i32(timed_out, 0);
-    if (st != IOX2_CIF_OK) {
-        return st;
-    }
-    if (header == NULL || (pcap == NULL && length != 0) || (length != 0 && offset > UINT32_MAX - length)) {
-        return IOX2_CIF_ERR_INVALID_ARGUMENT;
-    }
-
-    st = lock_exclusive();
-    if (st != IOX2_CIF_OK) {
-        return st;
-    }
-    w = (iox2_cif_ps_writer*)lookup_handle(writer, IOX2_CIF_KIND_PCAP_WRITER);
-    if (w == NULL || w->dying) {
-        unlock_exclusive();
-        return IOX2_CIF_ERR_INVALID_HANDLE;
-    }
-    if (length > w->max_count) {
-        store_u64(samples, w->stat_samples);
-        store_u64(timeouts, w->stat_timeouts);
-        unlock_exclusive();
-        return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
-    }
-    if (w->scratch == NULL) {
-        unlock_exclusive();
-        return IOX2_CIF_ERR_INTERNAL;
-    }
-    payload = (uint8_t*)w->scratch;
-    if (copy_bytes_bounded(&hdr, header, sizeof(hdr)) != IOX2_CIF_OK) {
-        unlock_exclusive();
-        return IOX2_CIF_ERR_INVALID_ARGUMENT;
-    }
-    stamped = w->pcap_ctr;
-    w->pcap_ctr++;
-    hdr.length = (uint64_t)IOX2_CIF_PCAP_HDR_SIZE + (uint64_t)length;
-    hdr.ctr = stamped;
-    memset(hdr.reserved, 0, sizeof(hdr.reserved));
-    memcpy(payload, &hdr, sizeof(hdr));
-    if (length > 0) {
-        if (copy_bytes_bounded(payload + IOX2_CIF_PCAP_HDR_SIZE, (const uint8_t*)pcap + offset, length)
-            != IOX2_CIF_OK) {
-            w->pcap_ctr--;
-            unlock_exclusive();
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-    }
-    {
-        size_t used = (size_t)IOX2_CIF_PCAP_HDR_SIZE + (size_t)length;
-        if (used < w->value_size) {
-            memset(payload + used, 0, (size_t)w->value_size - used);
-        }
-    }
-    w->inflight++;
-    be_pub = w->be.publisher;
-    bp_pub = w->bp.publisher;
-    be_nt = w->be.notifier;
-    bp_nt = w->bp.notifier;
-    value_size = w->value_size;
-    supports_bp = w->supports_backpressure;
-    unlock_exclusive();
 
     if (supports_bp && bp_pub != NULL) {
         g_ps_bp_one_try = timeout_ms == 0 ? 1 : 0;
@@ -6306,6 +6236,213 @@ release_writer:
     return st;
 }
 
+iox2_cif_status iox2_cif_pcap_write(
+    uint64_t writer,
+    const void* header,
+    const void* pcap_header,
+    uint32_t pcap_header_len,
+    const void* pcap,
+    uint32_t offset,
+    uint32_t length,
+    uint32_t timeout_ms,
+    int32_t* timed_out,
+    uint64_t* samples,
+    uint64_t* timeouts) {
+    iox2_cif_ps_writer* w = NULL;
+    uint8_t* payload = NULL;
+    iox2_cif_pcap_hdr_t hdr;
+    iox2_publisher_h be_pub = NULL;
+    iox2_publisher_h bp_pub = NULL;
+    iox2_notifier_h be_nt = NULL;
+    iox2_notifier_h bp_nt = NULL;
+    uint32_t value_size = 0;
+    int supports_bp = 0;
+    uint64_t stamped = 0;
+    iox2_cif_status st = IOX2_CIF_OK;
+
+    if (timed_out == NULL || samples == NULL || timeouts == NULL) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    st = store_i32(timed_out, 0);
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    if (header == NULL || (pcap == NULL && length != 0) || (pcap_header == NULL && pcap_header_len != 0)
+        || (length != 0 && offset > UINT32_MAX - length)
+        || (pcap_header_len > 0 && length > UINT32_MAX - pcap_header_len)) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+
+    st = lock_exclusive();
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    w = (iox2_cif_ps_writer*)lookup_handle(writer, IOX2_CIF_KIND_PCAP_WRITER);
+    if (w == NULL || w->dying) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INVALID_HANDLE;
+    }
+    if (pcap_header_len + length > w->max_count) {
+        store_u64(samples, w->stat_samples);
+        store_u64(timeouts, w->stat_timeouts);
+        unlock_exclusive();
+        return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
+    }
+    if (w->scratch == NULL) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    payload = (uint8_t*)w->scratch;
+    if (copy_bytes_bounded(&hdr, header, sizeof(hdr)) != IOX2_CIF_OK) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    stamped = w->pcap_ctr;
+    w->pcap_ctr++;
+    hdr.length = (uint64_t)IOX2_CIF_PCAP_HDR_SIZE + (uint64_t)length;
+    hdr.ctr = stamped;
+    memset(hdr.reserved, 0, sizeof(hdr.reserved));
+    memcpy(payload, &hdr, sizeof(hdr));
+    if (pcap_header_len > 0) {
+        if (copy_bytes_bounded(payload + IOX2_CIF_PCAP_HDR_SIZE, pcap_header, pcap_header_len)
+            != IOX2_CIF_OK) {
+            w->pcap_ctr--;
+            unlock_exclusive();
+            return IOX2_CIF_ERR_INVALID_ARGUMENT;
+        }
+    }
+    if (length > 0) {
+        if (copy_bytes_bounded(
+                payload + IOX2_CIF_PCAP_HDR_SIZE + pcap_header_len, (const uint8_t*)pcap + offset, length)
+            != IOX2_CIF_OK) {
+            w->pcap_ctr--;
+            unlock_exclusive();
+            return IOX2_CIF_ERR_INVALID_ARGUMENT;
+        }
+    }
+    {
+        size_t used = (size_t)IOX2_CIF_PCAP_HDR_SIZE + (size_t)pcap_header_len + (size_t)length;
+        if (used < w->value_size) {
+            memset(payload + used, 0, (size_t)w->value_size - used);
+        }
+    }
+    w->inflight++;
+    be_pub = w->be.publisher;
+    bp_pub = w->bp.publisher;
+    be_nt = w->be.notifier;
+    bp_nt = w->bp.notifier;
+    value_size = w->value_size;
+    supports_bp = w->supports_backpressure;
+    unlock_exclusive();
+
+    return pcap_publish_copy(
+        writer,
+        payload,
+        be_pub,
+        bp_pub,
+        be_nt,
+        bp_nt,
+        value_size,
+        supports_bp,
+        stamped,
+        timeout_ms,
+        timed_out,
+        samples,
+        timeouts);
+}
+
+iox2_cif_status iox2_cif_pcap_write_raw(
+    uint64_t writer,
+    const void* sample,
+    uint32_t length,
+    uint32_t timeout_ms,
+    int32_t* timed_out,
+    uint64_t* samples,
+    uint64_t* timeouts) {
+    iox2_cif_ps_writer* w = NULL;
+    uint8_t* payload = NULL;
+    iox2_cif_pcap_hdr_t hdr;
+    iox2_publisher_h be_pub = NULL;
+    iox2_publisher_h bp_pub = NULL;
+    iox2_notifier_h be_nt = NULL;
+    iox2_notifier_h bp_nt = NULL;
+    uint32_t value_size = 0;
+    int supports_bp = 0;
+    uint64_t stamped = 0;
+    uint32_t pcap_bytes = 0;
+    iox2_cif_status st = IOX2_CIF_OK;
+
+    if (timed_out == NULL || samples == NULL || timeouts == NULL) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    st = store_i32(timed_out, 0);
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    if (sample == NULL || length < IOX2_CIF_PCAP_HDR_SIZE) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    pcap_bytes = length - IOX2_CIF_PCAP_HDR_SIZE;
+
+    st = lock_exclusive();
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    w = (iox2_cif_ps_writer*)lookup_handle(writer, IOX2_CIF_KIND_PCAP_WRITER);
+    if (w == NULL || w->dying) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INVALID_HANDLE;
+    }
+    if (pcap_bytes > w->max_count) {
+        store_u64(samples, w->stat_samples);
+        store_u64(timeouts, w->stat_timeouts);
+        unlock_exclusive();
+        return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
+    }
+    if (w->scratch == NULL) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    payload = (uint8_t*)w->scratch;
+    if (copy_bytes_bounded(payload, sample, length) != IOX2_CIF_OK) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    memcpy(&hdr, payload, sizeof(hdr));
+    stamped = w->pcap_ctr;
+    w->pcap_ctr++;
+    hdr.length = (uint64_t)length;
+    hdr.ctr = stamped;
+    memset(hdr.reserved, 0, sizeof(hdr.reserved));
+    memcpy(payload, &hdr, sizeof(hdr));
+    if ((size_t)length < w->value_size) {
+        memset(payload + length, 0, (size_t)w->value_size - (size_t)length);
+    }
+    w->inflight++;
+    be_pub = w->be.publisher;
+    bp_pub = w->bp.publisher;
+    be_nt = w->be.notifier;
+    bp_nt = w->bp.notifier;
+    value_size = w->value_size;
+    supports_bp = w->supports_backpressure;
+    unlock_exclusive();
+
+    return pcap_publish_copy(
+        writer,
+        payload,
+        be_pub,
+        bp_pub,
+        be_nt,
+        bp_nt,
+        value_size,
+        supports_bp,
+        stamped,
+        timeout_ms,
+        timed_out,
+        samples,
+        timeouts);
+}
+
 static void pcap_note_receive_ctr(iox2_cif_ps_sub* s, uint64_t ctr) {
     if (!s->stat_have_last) {
         s->stat_have_last = 1;
@@ -6333,6 +6470,8 @@ static void pcap_note_receive_ctr(iox2_cif_ps_sub* s, uint64_t ctr) {
 static iox2_cif_status pcap_take_sample(
     iox2_cif_ps_sub* s,
     void* header,
+    void* pcap_header,
+    uint32_t pcap_header_len,
     void* pcap,
     uint32_t cap,
     uint32_t* actual,
@@ -6344,6 +6483,8 @@ static iox2_cif_status pcap_take_sample(
     iox2_cif_pcap_hdr_t hdr;
     uint64_t live = 0;
     uint32_t copy_n = 0;
+    uint32_t max_pcap = 0;
+    const uint8_t* body = NULL;
     int rc = iox2_subscriber_receive(&s->subscriber, NULL, &sample);
     if (rc != IOX2_OK) {
         set_last_detail("subscriber receive");
@@ -6365,19 +6506,34 @@ static iox2_cif_status pcap_take_sample(
         return IOX2_CIF_ERR_INTERNAL;
     }
     live = hdr.length - IOX2_CIF_PCAP_HDR_SIZE;
-    if (live > s->max_count) {
-        live = s->max_count;
+    max_pcap = s->max_count;
+    if (pcap_header_len > max_pcap) {
+        iox2_sample_drop(sample);
+        return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
+    }
+    max_pcap -= pcap_header_len;
+    if (live > max_pcap) {
+        live = max_pcap;
     }
     if (copy_bytes_bounded(header, &hdr, sizeof(hdr)) != IOX2_CIF_OK) {
         iox2_sample_drop(sample);
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    body = (const uint8_t*)payload + IOX2_CIF_PCAP_HDR_SIZE;
+    if (pcap_header_len > 0) {
+        if (pcap_header == NULL
+            || copy_bytes_bounded(pcap_header, body, pcap_header_len) != IOX2_CIF_OK) {
+            iox2_sample_drop(sample);
+            return IOX2_CIF_ERR_INVALID_ARGUMENT;
+        }
+        body += pcap_header_len;
     }
     copy_n = (uint32_t)live;
     if (copy_n > cap) {
         copy_n = cap;
     }
     if (copy_n > 0 && pcap != NULL) {
-        if (copy_bytes_bounded(pcap, (const uint8_t*)payload + IOX2_CIF_PCAP_HDR_SIZE, copy_n) != IOX2_CIF_OK) {
+        if (copy_bytes_bounded(pcap, body, copy_n) != IOX2_CIF_OK) {
             iox2_sample_drop(sample);
             return IOX2_CIF_ERR_INVALID_ARGUMENT;
         }
@@ -6394,9 +6550,72 @@ static iox2_cif_status pcap_take_sample(
     return IOX2_CIF_OK;
 }
 
+static iox2_cif_status pcap_take_raw(
+    iox2_cif_ps_sub* s,
+    void* sample,
+    uint32_t cap,
+    uint32_t* actual,
+    uint32_t* max,
+    int32_t* got) {
+    iox2_sample_h iox_sample = NULL;
+    const void* payload = NULL;
+    c_size_t nbytes = 0;
+    iox2_cif_pcap_hdr_t hdr;
+    uint64_t live = 0;
+    uint32_t copy_n = 0;
+    uint32_t max_sample = 0;
+    int rc = iox2_subscriber_receive(&s->subscriber, NULL, &iox_sample);
+    if (rc != IOX2_OK) {
+        set_last_detail("subscriber receive");
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    if (iox_sample == NULL) {
+        *got = 0;
+        return IOX2_CIF_OK;
+    }
+    iox2_sample_payload(&iox_sample, &payload, NULL);
+    nbytes = iox2_sample_payload_number_of_bytes(&iox_sample);
+    if (nbytes < IOX2_CIF_PCAP_HDR_SIZE || payload == NULL) {
+        iox2_sample_drop(iox_sample);
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    memcpy(&hdr, payload, sizeof(hdr));
+    if (hdr.length < IOX2_CIF_PCAP_HDR_SIZE) {
+        iox2_sample_drop(iox_sample);
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    max_sample = IOX2_CIF_PCAP_HDR_SIZE + s->max_count;
+    live = hdr.length;
+    if (live > (uint64_t)max_sample) {
+        live = (uint64_t)max_sample;
+    }
+    copy_n = (uint32_t)live;
+    if (copy_n > cap) {
+        copy_n = cap;
+    }
+    if (copy_n > 0 && sample != NULL) {
+        if (copy_bytes_bounded(sample, payload, copy_n) != IOX2_CIF_OK) {
+            iox2_sample_drop(iox_sample);
+            return IOX2_CIF_ERR_INVALID_ARGUMENT;
+        }
+    }
+    iox2_sample_drop(iox_sample);
+    if (actual != NULL) {
+        store_u32(actual, (uint32_t)live);
+    }
+    if (max != NULL) {
+        store_u32(max, max_sample);
+    }
+    pcap_note_receive_ctr(s, hdr.ctr);
+    *got = 1;
+    return IOX2_CIF_OK;
+}
+
 iox2_cif_status iox2_cif_pcap_receive(
     uint64_t subscriber,
     void* header,
+    void* pcap_header,
+    uint32_t pcap_header_len,
     void* pcap,
     uint32_t cap,
     uint32_t timeout_ms,
@@ -6411,7 +6630,8 @@ iox2_cif_status iox2_cif_pcap_receive(
     int did_timeout = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
-    if (timed_out == NULL || samples == NULL || dropped == NULL || timeouts == NULL || header == NULL) {
+    if (timed_out == NULL || samples == NULL || dropped == NULL || timeouts == NULL || header == NULL
+        || (pcap_header == NULL && pcap_header_len != 0)) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
     st = store_i32(timed_out, 0);
@@ -6434,7 +6654,7 @@ iox2_cif_status iox2_cif_pcap_receive(
     s->inflight++;
     unlock_exclusive();
 
-    st = pcap_take_sample(s, header, pcap, cap, actual, max, &got);
+    st = pcap_take_sample(s, header, pcap_header, pcap_header_len, pcap, cap, actual, max, &got);
     if (st == IOX2_CIF_OK && !got && timeout_ms > 0) {
         enum iox2_waitset_run_result_e result = iox2_waitset_run_result_e_ALL_EVENTS_HANDLED;
         uint64_t sec = (uint64_t)(timeout_ms / 1000u);
@@ -6445,7 +6665,89 @@ iox2_cif_status iox2_cif_pcap_receive(
             set_last_detail("waitset wait");
             st = IOX2_CIF_ERR_INTERNAL;
         } else {
-            st = pcap_take_sample(s, header, pcap, cap, actual, max, &got);
+            st = pcap_take_sample(s, header, pcap_header, pcap_header_len, pcap, cap, actual, max, &got);
+        }
+    }
+    if (st == IOX2_CIF_OK && !got) {
+        store_i32(timed_out, 1);
+        did_timeout = 1;
+    }
+
+    {
+        iox2_cif_status lk = lock_exclusive();
+        if (lk == IOX2_CIF_OK) {
+            iox2_cif_ps_sub* live = (iox2_cif_ps_sub*)lookup_handle(subscriber, IOX2_CIF_KIND_PCAP_SUB);
+            if (live != NULL) {
+                if (did_timeout) {
+                    live->stat_timeouts++;
+                }
+                store_u64(samples, live->stat_samples);
+                store_u64(dropped, live->stat_dropped);
+                store_u64(timeouts, live->stat_timeouts);
+                if (live->inflight > 0) {
+                    live->inflight--;
+                }
+                if (live->dying && live->inflight == 0) {
+                    ps_sub_free(live);
+                }
+            }
+            unlock_exclusive();
+        }
+    }
+    return st;
+}
+
+iox2_cif_status iox2_cif_pcap_receive_raw(
+    uint64_t subscriber,
+    void* sample,
+    uint32_t cap,
+    uint32_t timeout_ms,
+    uint32_t* actual,
+    uint32_t* max,
+    int32_t* timed_out,
+    uint64_t* samples,
+    uint64_t* dropped,
+    uint64_t* timeouts) {
+    iox2_cif_ps_sub* s = NULL;
+    int32_t got = 0;
+    int did_timeout = 0;
+    iox2_cif_status st = IOX2_CIF_OK;
+
+    if (timed_out == NULL || samples == NULL || dropped == NULL || timeouts == NULL || sample == NULL) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    st = store_i32(timed_out, 0);
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    if (actual != NULL) {
+        store_u32(actual, 0);
+    }
+
+    st = lock_exclusive();
+    if (st != IOX2_CIF_OK) {
+        return st;
+    }
+    s = (iox2_cif_ps_sub*)lookup_handle(subscriber, IOX2_CIF_KIND_PCAP_SUB);
+    if (s == NULL || s->dying || s->subscriber == NULL) {
+        unlock_exclusive();
+        return IOX2_CIF_ERR_INVALID_HANDLE;
+    }
+    s->inflight++;
+    unlock_exclusive();
+
+    st = pcap_take_raw(s, sample, cap, actual, max, &got);
+    if (st == IOX2_CIF_OK && !got && timeout_ms > 0) {
+        enum iox2_waitset_run_result_e result = iox2_waitset_run_result_e_ALL_EVENTS_HANDLED;
+        uint64_t sec = (uint64_t)(timeout_ms / 1000u);
+        uint32_t nsec = (uint32_t)((timeout_ms % 1000u) * 1000000u);
+        int rc = iox2_waitset_wait_and_process_once_with_timeout(
+            &s->waitset, ps_on_wait, s, sec, nsec, &result);
+        if (rc != IOX2_OK && rc != (int)iox2_waitset_run_error_e_NO_ATTACHMENTS) {
+            set_last_detail("waitset wait");
+            st = IOX2_CIF_ERR_INTERNAL;
+        } else {
+            st = pcap_take_raw(s, sample, cap, actual, max, &got);
         }
     }
     if (st == IOX2_CIF_OK && !got) {

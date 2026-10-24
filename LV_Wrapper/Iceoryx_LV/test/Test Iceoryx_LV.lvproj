@@ -17,6 +17,7 @@
 			<Item Name="Performance Test.vi" Type="VI" URL="../Performance Test.vi"/>
 			<Item Name="Test BB write read.vi" Type="VI" URL="../Test BB write read.vi"/>
 			<Item Name="Test Check Publisher Data Length.vi" Type="VI" URL="../Test Check Publisher Data Length.vi"/>
+			<Item Name="Test CIF pcap PubSub Raw.vi" Type="VI" URL="../Test CIF pcap PubSub Raw.vi"/>
 			<Item Name="Test CIF pcap PubSub.vi" Type="VI" URL="../Test CIF pcap PubSub.vi"/>
 			<Item Name="Test Raw PubSub.vi" Type="VI" URL="../Test Raw PubSub.vi"/>
 		</Item>
@@ -117,7 +118,6 @@ AddOutputFilter chunkFilter
 		<Property Name="target.WebServer.ViAccess" Type="Str">+*</Property>
 		<Property Name="target.webservices.SecurityAPIKey" Type="Str">PqVr/ifkAQh+lVrdPIykXlFvg12GhhQFR8H9cUhphgg=:pTe9HRlQuMfJxAG6QCGq7UvoUpJzAzWGKy5SbZ+roSU=</Property>
 		<Property Name="target.webservices.ValidTimestampWindow" Type="Int">15</Property>
-		<Item Name="trash_Test naming function.vi" Type="VI" URL="../../trash/trash_Test naming function.vi"/>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>

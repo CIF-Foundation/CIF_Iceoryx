@@ -143,7 +143,9 @@ Create/destroy / `ps_info`: **Run in UI thread**. `ps_write` / `ps_receive` / `p
 
 ## CIF-pcap pub/sub (`iox2_cif_pcap_*`)
 
-Header: Adapt to Type on a **flat 48-byte cluster** — `U64 length`, `I64 t0`, `I64 t_out`, `I64 t_tx`, `U64 ctr`, `U8 clock_id`, 7 reserved bytes. Pcap records: **Array Data Pointer** (U8). `clock_id` is any U8 (0 = TAI by convention only). The wrapper overwrites `length` and `ctr` on a successful write; it does not change `t_tx`.
+Header: Adapt to Type on a **flat 48-byte cluster** — `U64 length`, `I64 t0`, `I64 t_out`, `I64 t_tx`, `U64 ctr`, `U8 clock_id`, 7 reserved bytes. Optional `pcap_header` and pcap records: **Array Data Pointer** (U8). Writer and reader pass the same U32 `pcap_header_len` (agreed size; not stored in the CIF header). The wrapper concatenates `pcap_header` then `pcap` after the 48-byte cluster so you do not flatten them first. `clock_id` is any U8 (0 = TAI by convention only). The wrapper overwrites `length` (`48 +` pcap-record bytes only) and `ctr` on a successful write; it does not change `t_tx`.
+
+Whole-sample transport (`write_raw` / `receive_raw`): one U8 **Array Data Pointer** holding the 48-byte header then the pcap records. `length` / `actual` / `max` / `cap` are full sample bytes (including the header). Size the receive array to `max` (`48 + max_pcap_bytes` from `pcap_info`). On a successful receive, send `sample[0 .. actual)` over TCP. On the far side, `write_raw` that same buffer with `length = actual`. Create a BE subscriber (`use_backpressure` 0) and/or a BP subscriber (`use_backpressure` 1) — one handle is one queue.
 
 Typed writer: pass a concrete LinkType (0 is valid). Universal writer: `linktype` = `IOX2_CIF_PCAP_LINKTYPE_ANY` (`0xFFFFFFFF`). Typed subscriber: `pcap_sub_create` with that LinkType. Universal subscriber: `pcap_sub_open` (no LinkType). Typed-to-typed mismatch is **8106**. A typed subscriber may attach to a universal writer.
 
@@ -155,10 +157,12 @@ Create/destroy / `pcap_info` / `pcap_sub_open`: **UI thread**. Write/receive/sta
 | `iox2_cif_pcap_sub_create` | CStr name/topic; U32 linktype, timeout; I32 use_bp; U64* subscriber |
 | `iox2_cif_pcap_sub_open` | CStr name/topic; I32 use_bp; U32 timeout; U64* — universal subscriber |
 | `iox2_cif_pcap_info` | U64 port; type buf + cap + len; U32* linktype, max_pcap_bytes, be_subscriber_buffer, bp_subscriber_buffer |
-| `iox2_cif_pcap_write` | U64; header Pointer to Value; pcap Array Data Pointer; U32 offset, length, timeout; I32* timed_out; U64* samples, timeouts |
+| `iox2_cif_pcap_write` | U64; header Pointer to Value; pcap_header Array Data Pointer (U8); U32 pcap_header_len; pcap Array Data Pointer; U32 offset, length, timeout; I32* timed_out; U64* samples, timeouts |
+| `iox2_cif_pcap_write_raw` | U64; sample Array Data Pointer (U8); U32 length (header+records), timeout; I32* timed_out; U64* samples, timeouts |
 | `iox2_cif_pcap_writer_stats` | U64; U64* samples, timeouts, last_ctr |
 | `iox2_cif_pcap_writer_stats_reset` | U64 — does not rewind on-wire `ctr` |
-| `iox2_cif_pcap_receive` | U64; header Pointer to Value; pcap Array Data Pointer; U32 cap, timeout; U32* actual, max; I32* timed_out; U64* samples, dropped, timeouts |
+| `iox2_cif_pcap_receive` | U64; header Pointer to Value; pcap_header Array Data Pointer (U8); U32 pcap_header_len; pcap Array Data Pointer; U32 cap, timeout; U32* actual, max; I32* timed_out; U64* samples, dropped, timeouts |
+| `iox2_cif_pcap_receive_raw` | U64; sample Array Data Pointer (U8); U32 cap, timeout; U32* actual, max (full sample bytes); I32* timed_out; U64* samples, dropped, timeouts |
 | `iox2_cif_pcap_stats` | U64; U64* samples, dropped, timeouts, last_ctr |
 | `iox2_cif_pcap_stats_reset` | U64 |
 | `iox2_cif_pcap_flush` | U64; U32* discarded — next receive times out if idle |
