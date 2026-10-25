@@ -96,11 +96,9 @@ extern "C" {
  * `iox2_cif_bb_read` / `write` use elements.
  * `iox2_cif_bb_read_raw` / `iox2_cif_bb_read_raw_at` use bytes.
  * `iox2_cif_pcap_write` / `receive` length / actual / max / cap are pcap-record
- * bytes (not including the 48-byte CIF header or the optional pcap_header).
- * `pcap_header_len` is the agreed prefix size in bytes (same on writer and
- * reader; not stored in iox2_cif_pcap_hdr_t).
+ * bytes (not including the 48-byte CIF header).
  * `iox2_cif_pcap_write_raw` / `receive_raw` length / actual / max / cap are
- * full sample bytes (48-byte CIF header + optional pcap_header + records).
+ * full sample bytes (48-byte CIF header + records).
  * `iox2_cif_status_text` / `iox2_cif_bb_topic_info` buf_len / out_len are bytes
  * (out_len is strlen, not including the terminating NUL).
  */
@@ -628,7 +626,7 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_ps_info(
 /* -------------------------------------------------------------------------- */
 /* CIF-pcap pub/sub                                                             */
 /*                                                                            */
-/* Sample: 48-byte iox2_cif_pcap_hdr_t + optional pcap_header + pcap records. */
+/* Sample: 48-byte iox2_cif_pcap_hdr_t + pcap records. */
 /* Typed type_name iox2_cif.pcap.<linktype>; universal iox2_cif.pcap.         */
 /* LINKTYPE_ANY on writer create originates a universal stream.               */
 /* One writer per (name, topic), same as raw pub/sub.                         */
@@ -672,18 +670,12 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_info(
     uint32_t* bp_subscriber_buffer);
 
 /**
- * Publish CIF header, then optional `pcap_header`, then pcap records.
- * `pcap_header` and `pcap` are concatenated in the sample after the 48-byte
- * CIF header. `length` is pcap-record bytes only. `pcap_header_len` is the
- * agreed prefix size (not stamped into the CIF header). Writer and reader
- * must pass the same `pcap_header_len`. `pcap_header_len + length` must be
- * <= `max_pcap_bytes` or the call returns 8108.
+ * Publish CIF header, then pcap records. `length` is pcap-record bytes only
+ * and must be <= `max_pcap_bytes` or the call returns 8108.
  */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_write(
     uint64_t writer,
     const void* header,
-    const void* pcap_header,
-    uint32_t pcap_header_len,
     const void* pcap,
     uint32_t offset,
     uint32_t length,
@@ -723,14 +715,11 @@ IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_writer_stats_reset(uint
  * Same timeout / timed_out rules as iox2_cif_ps_receive: no valid sample →
  * status 0, actual 0, timed_out 1 (including timeout_ms 0).
  *
- * `pcap_header_len` must match the writer's agreed prefix size. `actual` is
- * pcap-record bytes only (not including the CIF header or pcap_header).
+ * `actual` is pcap-record bytes only (not including the CIF header).
  */
 IOX2_CIF_API iox2_cif_status IOX2_CIF_CALL iox2_cif_pcap_receive(
     uint64_t subscriber,
     void* header,
-    void* pcap_header,
-    uint32_t pcap_header_len,
     void* pcap,
     uint32_t cap,
     uint32_t timeout_ms,

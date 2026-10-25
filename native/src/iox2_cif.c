@@ -3874,7 +3874,7 @@ typedef struct iox2_cif_ps_writer {
     uint64_t stat_timeouts;
     uint64_t stat_last_ctr;
     char* descriptor;
-    void* scratch; /* aligned value_size, allocated once at writer create */
+    void* scratch; /* unused for pub/sub; blackboard writers keep scratch */
     iox2_cif_ps_chan be;
     iox2_cif_ps_chan bp;
 } iox2_cif_ps_writer;
@@ -4582,11 +4582,6 @@ iox2_cif_status iox2_cif_ps_writer_create(
     w->bp_subscriber_buffer = create_bp ? bp_subscriber_buffer : 0;
     w->descriptor = desc_copy;
     compute_value_layout(is_array, elem_size, elem_align, max_count, &w->value_size, &w->value_align);
-    w->scratch = alloc_aligned_bytes(w->value_size, w->value_align);
-    if (w->scratch == NULL) {
-        ps_writer_free(w);
-        return IOX2_CIF_ERR_NO_MEMORY;
-    }
 
     st = lock_exclusive();
     if (st != IOX2_CIF_OK) {
@@ -5127,23 +5122,178 @@ iox2_cif_status iox2_cif_ps_sub_create(
     return IOX2_CIF_OK;
 }
 
-static iox2_cif_status ps_send_copy(iox2_publisher_h publisher, const void* payload, uint32_t value_size) {
-    size_t recipients = 0;
-    int rc = iox2_publisher_send_copy(&publisher, payload, value_size, &recipients);
+typedef iox2_cif_status (*iox2_cif_loan_fill_fn)(void* dest, uint32_t dest_size, void* ctx);
+
+typedef struct iox2_cif_ps_fill_ctx {
+    const void* elems;
+    uint32_t count;
+    uint32_t elem_size;
+    int is_array;
+} iox2_cif_ps_fill_ctx;
+
+typedef struct iox2_cif_pcap_fill_ctx {
+    const iox2_cif_pcap_hdr_t* hdr;
+    const void* pcap;
+    uint32_t offset;
+    uint32_t length;
+} iox2_cif_pcap_fill_ctx;
+
+typedef struct iox2_cif_pcap_raw_fill_ctx {
+    const iox2_cif_pcap_hdr_t* hdr;
+    const void* sample;
+    uint32_t length;
+} iox2_cif_pcap_raw_fill_ctx;
+
+static iox2_cif_status ps_fill_loaned(void* dest, uint32_t dest_size, void* ctx) {
+    iox2_cif_ps_fill_ctx* c = (iox2_cif_ps_fill_ctx*)ctx;
+    return fill_slot(dest, dest_size, c->is_array, c->elem_size, c->elems, c->count);
+}
+
+static iox2_cif_status pcap_fill_loaned(void* dest, uint32_t dest_size, void* ctx) {
+    iox2_cif_pcap_fill_ctx* c = (iox2_cif_pcap_fill_ctx*)ctx;
+    uint8_t* payload = (uint8_t*)dest;
+    size_t used = (size_t)IOX2_CIF_PCAP_HDR_SIZE + (size_t)c->length;
+    if (used > dest_size) {
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    memcpy(payload, c->hdr, sizeof(*c->hdr));
+    if (c->length > 0) {
+        if (copy_bytes_bounded(
+                payload + IOX2_CIF_PCAP_HDR_SIZE, (const uint8_t*)c->pcap + c->offset, c->length)
+            != IOX2_CIF_OK) {
+            return IOX2_CIF_ERR_INVALID_ARGUMENT;
+        }
+    }
+    if (used < dest_size) {
+        memset(payload + used, 0, dest_size - used);
+    }
+    return IOX2_CIF_OK;
+}
+
+static iox2_cif_status pcap_raw_fill_loaned(void* dest, uint32_t dest_size, void* ctx) {
+    iox2_cif_pcap_raw_fill_ctx* c = (iox2_cif_pcap_raw_fill_ctx*)ctx;
+    uint8_t* payload = (uint8_t*)dest;
+    if (c->length > dest_size) {
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    if (copy_bytes_bounded(payload, c->sample, c->length) != IOX2_CIF_OK) {
+        return IOX2_CIF_ERR_INVALID_ARGUMENT;
+    }
+    memcpy(payload, c->hdr, sizeof(*c->hdr));
+    if ((size_t)c->length < dest_size) {
+        memset(payload + c->length, 0, dest_size - (size_t)c->length);
+    }
+    return IOX2_CIF_OK;
+}
+
+static int ps_loan_error_is_resource(int rc) {
+    return rc == (int)iox2_loan_error_e_OUT_OF_MEMORY
+        || rc == (int)iox2_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES;
+}
+
+static int ps_send_error_is_timeout(int rc) {
+    return rc == (int)iox2_send_error_e_UNABLE_TO_DELIVER
+        || rc == (int)iox2_send_error_e_LOAN_ERROR_OUT_OF_MEMORY
+        || rc == (int)iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANS;
+}
+
+static void ps_arm_bp_deadline(uint32_t timeout_ms) {
+    g_ps_bp_one_try = timeout_ms == 0 ? 1 : 0;
+#ifdef _WIN32
+    g_ps_bp_deadline = GetTickCount64() + (ULONGLONG)timeout_ms;
+#else
+    g_ps_bp_deadline_ms = now_ms() + (uint64_t)timeout_ms;
+#endif
+}
+
+static iox2_cif_status ps_loan_fill_send(
+    iox2_publisher_h publisher,
+    uint32_t value_size,
+    int arm_bp_timeout,
+    uint32_t timeout_ms,
+    int map_resource_to_timeout,
+    iox2_cif_loan_fill_fn fill,
+    void* fill_ctx) {
+    iox2_sample_mut_t sample_storage;
+    iox2_sample_mut_h sample = NULL;
+    void* dest = NULL;
+    c_size_t nbytes = 0;
+    int rc = 0;
+    iox2_cif_status st = IOX2_CIF_OK;
+
+    memset(&sample_storage, 0, sizeof(sample_storage));
+    rc = iox2_publisher_loan_slice_uninit(&publisher, &sample_storage, &sample, 1);
+    if (rc != IOX2_OK) {
+        if (map_resource_to_timeout && ps_loan_error_is_resource(rc)) {
+            return IOX2_CIF_ERR_TIMEOUT;
+        }
+        set_last_detail(iox2_loan_error_string((enum iox2_loan_error_e)rc));
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    iox2_sample_mut_payload_mut(&sample, &dest, NULL);
+    nbytes = iox2_sample_mut_payload_number_of_bytes(&sample);
+    if (dest == NULL || nbytes < (c_size_t)value_size) {
+        iox2_sample_mut_drop(sample);
+        set_last_detail("loaned payload too small");
+        return IOX2_CIF_ERR_INTERNAL;
+    }
+    st = fill(dest, value_size, fill_ctx);
+    if (st != IOX2_CIF_OK) {
+        iox2_sample_mut_drop(sample);
+        return st;
+    }
+    if (arm_bp_timeout) {
+        ps_arm_bp_deadline(timeout_ms);
+    }
+    rc = iox2_sample_mut_send(sample, NULL);
     if (rc == IOX2_OK) {
         return IOX2_CIF_OK;
     }
-    if (rc == (int)iox2_send_error_e_UNABLE_TO_DELIVER) {
+    if (rc == (int)iox2_send_error_e_UNABLE_TO_DELIVER
+        || (map_resource_to_timeout && ps_send_error_is_timeout(rc))) {
         return IOX2_CIF_ERR_TIMEOUT;
     }
     set_last_detail(iox2_send_error_string((enum iox2_send_error_e)rc));
     return IOX2_CIF_ERR_INTERNAL;
 }
 
+static iox2_cif_status ps_publish_loaned(
+    iox2_publisher_h be_pub,
+    iox2_publisher_h bp_pub,
+    iox2_notifier_h be_nt,
+    iox2_notifier_h bp_nt,
+    int supports_bp,
+    uint32_t value_size,
+    uint32_t timeout_ms,
+    iox2_cif_loan_fill_fn fill,
+    void* fill_ctx) {
+    iox2_cif_status st = IOX2_CIF_OK;
+
+    if (supports_bp && bp_pub != NULL) {
+        st = ps_loan_fill_send(bp_pub, value_size, 1, timeout_ms, 1, fill, fill_ctx);
+        if (st != IOX2_CIF_OK) {
+            return st;
+        }
+    }
+    if (be_pub != NULL) {
+        st = ps_loan_fill_send(be_pub, value_size, 0, 0, 0, fill, fill_ctx);
+        if (st != IOX2_CIF_OK) {
+            return st;
+        }
+    }
+    if (supports_bp && bp_nt != NULL) {
+        iox2_notifier_notify(&bp_nt, NULL);
+    }
+    if (be_nt != NULL) {
+        iox2_notifier_notify(&be_nt, NULL);
+    }
+    return IOX2_CIF_OK;
+}
+
 iox2_cif_status iox2_cif_ps_write(
     uint64_t writer, const void* elems, uint32_t count, uint32_t timeout_ms, int32_t* timed_out) {
     iox2_cif_ps_writer* w = NULL;
-    void* payload = NULL;
+    iox2_cif_ps_fill_ctx fill;
     iox2_publisher_h be_pub = NULL;
     iox2_publisher_h bp_pub = NULL;
     iox2_notifier_h be_nt = NULL;
@@ -5152,6 +5302,7 @@ iox2_cif_status iox2_cif_ps_write(
     int supports_bp = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
+    memset(&fill, 0, sizeof(fill));
     if (timed_out == NULL) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
@@ -5180,20 +5331,10 @@ iox2_cif_status iox2_cif_ps_write(
         unlock_exclusive();
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
-    if (w->is_array) {
-        if (w->scratch == NULL) {
-            unlock_exclusive();
-            return IOX2_CIF_ERR_INTERNAL;
-        }
-        st = fill_slot(w->scratch, w->value_size, w->is_array, w->elem_size, elems, count);
-        if (st != IOX2_CIF_OK) {
-            unlock_exclusive();
-            return st;
-        }
-        payload = w->scratch;
-    } else {
-        payload = (void*)elems;
-    }
+    fill.elems = elems;
+    fill.count = count;
+    fill.elem_size = w->elem_size;
+    fill.is_array = w->is_array;
     w->inflight++;
     be_pub = w->be.publisher;
     bp_pub = w->bp.publisher;
@@ -5203,38 +5344,13 @@ iox2_cif_status iox2_cif_ps_write(
     supports_bp = w->supports_backpressure;
     unlock_exclusive();
 
-    if (supports_bp && bp_pub != NULL) {
-        g_ps_bp_one_try = timeout_ms == 0 ? 1 : 0;
-#ifdef _WIN32
-        g_ps_bp_deadline = GetTickCount64() + (ULONGLONG)timeout_ms;
-#else
-        g_ps_bp_deadline_ms = now_ms() + (uint64_t)timeout_ms;
-#endif
-        st = ps_send_copy(bp_pub, payload, value_size);
-        if (st == IOX2_CIF_ERR_TIMEOUT) {
-            store_i32(timed_out, 1);
-            st = IOX2_CIF_OK;
-            goto release_writer;
-        }
-        if (st != IOX2_CIF_OK) {
-            goto release_writer;
-        }
+    st = ps_publish_loaned(
+        be_pub, bp_pub, be_nt, bp_nt, supports_bp, value_size, timeout_ms, ps_fill_loaned, &fill);
+    if (st == IOX2_CIF_ERR_TIMEOUT) {
+        store_i32(timed_out, 1);
+        st = IOX2_CIF_OK;
     }
 
-    if (be_pub != NULL) {
-        st = ps_send_copy(be_pub, payload, value_size);
-        if (st != IOX2_CIF_OK) {
-            goto release_writer;
-        }
-    }
-    if (supports_bp && bp_nt != NULL) {
-        iox2_notifier_notify(&bp_nt, NULL);
-    }
-    if (be_nt != NULL) {
-        iox2_notifier_notify(&be_nt, NULL);
-    }
-
-release_writer:
     {
         iox2_cif_status lk = lock_exclusive();
         if (lk == IOX2_CIF_OK) {
@@ -5886,11 +6002,6 @@ iox2_cif_status iox2_cif_pcap_writer_create(
     w->be_subscriber_buffer = create_be ? be_subscriber_buffer : 0;
     w->bp_subscriber_buffer = create_bp ? bp_subscriber_buffer : 0;
     w->descriptor = desc_copy;
-    w->scratch = alloc_aligned_bytes(w->value_size, w->value_align);
-    if (w->scratch == NULL) {
-        ps_writer_free(w);
-        return IOX2_CIF_ERR_NO_MEMORY;
-    }
 
     if (create_be) {
         st = ps_compose_name(name_copy, topic_copy, IOX2_CIF_PS_BE_SUFFIX, be_name, sizeof(be_name));
@@ -6156,9 +6267,8 @@ iox2_cif_status iox2_cif_pcap_info(
     return st;
 }
 
-static iox2_cif_status pcap_publish_copy(
+static iox2_cif_status pcap_publish(
     uint64_t writer,
-    const uint8_t* payload,
     iox2_publisher_h be_pub,
     iox2_publisher_h bp_pub,
     iox2_notifier_h be_nt,
@@ -6169,44 +6279,23 @@ static iox2_cif_status pcap_publish_copy(
     uint32_t timeout_ms,
     int32_t* timed_out,
     uint64_t* samples,
-    uint64_t* timeouts) {
+    uint64_t* timeouts,
+    iox2_cif_loan_fill_fn fill,
+    void* fill_ctx) {
     int did_timeout = 0;
     int send_ok = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
-    if (supports_bp && bp_pub != NULL) {
-        g_ps_bp_one_try = timeout_ms == 0 ? 1 : 0;
-#ifdef _WIN32
-        g_ps_bp_deadline = GetTickCount64() + (ULONGLONG)timeout_ms;
-#else
-        g_ps_bp_deadline_ms = now_ms() + (uint64_t)timeout_ms;
-#endif
-        st = ps_send_copy(bp_pub, payload, value_size);
-        if (st == IOX2_CIF_ERR_TIMEOUT) {
-            store_i32(timed_out, 1);
-            did_timeout = 1;
-            st = IOX2_CIF_OK;
-            goto release_writer;
-        }
-        if (st != IOX2_CIF_OK) {
-            goto release_writer;
-        }
-    }
-    if (be_pub != NULL) {
-        st = ps_send_copy(be_pub, payload, value_size);
-        if (st != IOX2_CIF_OK) {
-            goto release_writer;
-        }
-    }
-    send_ok = 1;
-    if (supports_bp && bp_nt != NULL) {
-        iox2_notifier_notify(&bp_nt, NULL);
-    }
-    if (be_nt != NULL) {
-        iox2_notifier_notify(&be_nt, NULL);
+    st = ps_publish_loaned(
+        be_pub, bp_pub, be_nt, bp_nt, supports_bp, value_size, timeout_ms, fill, fill_ctx);
+    if (st == IOX2_CIF_ERR_TIMEOUT) {
+        store_i32(timed_out, 1);
+        did_timeout = 1;
+        st = IOX2_CIF_OK;
+    } else if (st == IOX2_CIF_OK) {
+        send_ok = 1;
     }
 
-release_writer:
     {
         iox2_cif_status lk = lock_exclusive();
         if (lk == IOX2_CIF_OK) {
@@ -6239,8 +6328,6 @@ release_writer:
 iox2_cif_status iox2_cif_pcap_write(
     uint64_t writer,
     const void* header,
-    const void* pcap_header,
-    uint32_t pcap_header_len,
     const void* pcap,
     uint32_t offset,
     uint32_t length,
@@ -6249,8 +6336,8 @@ iox2_cif_status iox2_cif_pcap_write(
     uint64_t* samples,
     uint64_t* timeouts) {
     iox2_cif_ps_writer* w = NULL;
-    uint8_t* payload = NULL;
     iox2_cif_pcap_hdr_t hdr;
+    iox2_cif_pcap_fill_ctx fill;
     iox2_publisher_h be_pub = NULL;
     iox2_publisher_h bp_pub = NULL;
     iox2_notifier_h be_nt = NULL;
@@ -6260,6 +6347,8 @@ iox2_cif_status iox2_cif_pcap_write(
     uint64_t stamped = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
+    memset(&hdr, 0, sizeof(hdr));
+    memset(&fill, 0, sizeof(fill));
     if (timed_out == NULL || samples == NULL || timeouts == NULL) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
@@ -6267,9 +6356,8 @@ iox2_cif_status iox2_cif_pcap_write(
     if (st != IOX2_CIF_OK) {
         return st;
     }
-    if (header == NULL || (pcap == NULL && length != 0) || (pcap_header == NULL && pcap_header_len != 0)
-        || (length != 0 && offset > UINT32_MAX - length)
-        || (pcap_header_len > 0 && length > UINT32_MAX - pcap_header_len)) {
+    if (header == NULL || (pcap == NULL && length != 0)
+        || (length != 0 && offset > UINT32_MAX - length)) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
 
@@ -6282,17 +6370,12 @@ iox2_cif_status iox2_cif_pcap_write(
         unlock_exclusive();
         return IOX2_CIF_ERR_INVALID_HANDLE;
     }
-    if (pcap_header_len + length > w->max_count) {
+    if (length > w->max_count) {
         store_u64(samples, w->stat_samples);
         store_u64(timeouts, w->stat_timeouts);
         unlock_exclusive();
         return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
     }
-    if (w->scratch == NULL) {
-        unlock_exclusive();
-        return IOX2_CIF_ERR_INTERNAL;
-    }
-    payload = (uint8_t*)w->scratch;
     if (copy_bytes_bounded(&hdr, header, sizeof(hdr)) != IOX2_CIF_OK) {
         unlock_exclusive();
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
@@ -6302,30 +6385,10 @@ iox2_cif_status iox2_cif_pcap_write(
     hdr.length = (uint64_t)IOX2_CIF_PCAP_HDR_SIZE + (uint64_t)length;
     hdr.ctr = stamped;
     memset(hdr.reserved, 0, sizeof(hdr.reserved));
-    memcpy(payload, &hdr, sizeof(hdr));
-    if (pcap_header_len > 0) {
-        if (copy_bytes_bounded(payload + IOX2_CIF_PCAP_HDR_SIZE, pcap_header, pcap_header_len)
-            != IOX2_CIF_OK) {
-            w->pcap_ctr--;
-            unlock_exclusive();
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-    }
-    if (length > 0) {
-        if (copy_bytes_bounded(
-                payload + IOX2_CIF_PCAP_HDR_SIZE + pcap_header_len, (const uint8_t*)pcap + offset, length)
-            != IOX2_CIF_OK) {
-            w->pcap_ctr--;
-            unlock_exclusive();
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-    }
-    {
-        size_t used = (size_t)IOX2_CIF_PCAP_HDR_SIZE + (size_t)pcap_header_len + (size_t)length;
-        if (used < w->value_size) {
-            memset(payload + used, 0, (size_t)w->value_size - used);
-        }
-    }
+    fill.hdr = &hdr;
+    fill.pcap = pcap;
+    fill.offset = offset;
+    fill.length = length;
     w->inflight++;
     be_pub = w->be.publisher;
     bp_pub = w->bp.publisher;
@@ -6335,9 +6398,8 @@ iox2_cif_status iox2_cif_pcap_write(
     supports_bp = w->supports_backpressure;
     unlock_exclusive();
 
-    return pcap_publish_copy(
+    return pcap_publish(
         writer,
-        payload,
         be_pub,
         bp_pub,
         be_nt,
@@ -6348,7 +6410,9 @@ iox2_cif_status iox2_cif_pcap_write(
         timeout_ms,
         timed_out,
         samples,
-        timeouts);
+        timeouts,
+        pcap_fill_loaned,
+        &fill);
 }
 
 iox2_cif_status iox2_cif_pcap_write_raw(
@@ -6360,8 +6424,8 @@ iox2_cif_status iox2_cif_pcap_write_raw(
     uint64_t* samples,
     uint64_t* timeouts) {
     iox2_cif_ps_writer* w = NULL;
-    uint8_t* payload = NULL;
     iox2_cif_pcap_hdr_t hdr;
+    iox2_cif_pcap_raw_fill_ctx fill;
     iox2_publisher_h be_pub = NULL;
     iox2_publisher_h bp_pub = NULL;
     iox2_notifier_h be_nt = NULL;
@@ -6372,6 +6436,8 @@ iox2_cif_status iox2_cif_pcap_write_raw(
     uint32_t pcap_bytes = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
+    memset(&hdr, 0, sizeof(hdr));
+    memset(&fill, 0, sizeof(fill));
     if (timed_out == NULL || samples == NULL || timeouts == NULL) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
@@ -6399,25 +6465,18 @@ iox2_cif_status iox2_cif_pcap_write_raw(
         unlock_exclusive();
         return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
     }
-    if (w->scratch == NULL) {
-        unlock_exclusive();
-        return IOX2_CIF_ERR_INTERNAL;
-    }
-    payload = (uint8_t*)w->scratch;
-    if (copy_bytes_bounded(payload, sample, length) != IOX2_CIF_OK) {
+    if (copy_bytes_bounded(&hdr, sample, sizeof(hdr)) != IOX2_CIF_OK) {
         unlock_exclusive();
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
-    memcpy(&hdr, payload, sizeof(hdr));
     stamped = w->pcap_ctr;
     w->pcap_ctr++;
     hdr.length = (uint64_t)length;
     hdr.ctr = stamped;
     memset(hdr.reserved, 0, sizeof(hdr.reserved));
-    memcpy(payload, &hdr, sizeof(hdr));
-    if ((size_t)length < w->value_size) {
-        memset(payload + length, 0, (size_t)w->value_size - (size_t)length);
-    }
+    fill.hdr = &hdr;
+    fill.sample = sample;
+    fill.length = length;
     w->inflight++;
     be_pub = w->be.publisher;
     bp_pub = w->bp.publisher;
@@ -6427,9 +6486,8 @@ iox2_cif_status iox2_cif_pcap_write_raw(
     supports_bp = w->supports_backpressure;
     unlock_exclusive();
 
-    return pcap_publish_copy(
+    return pcap_publish(
         writer,
-        payload,
         be_pub,
         bp_pub,
         be_nt,
@@ -6440,7 +6498,9 @@ iox2_cif_status iox2_cif_pcap_write_raw(
         timeout_ms,
         timed_out,
         samples,
-        timeouts);
+        timeouts,
+        pcap_raw_fill_loaned,
+        &fill);
 }
 
 static void pcap_note_receive_ctr(iox2_cif_ps_sub* s, uint64_t ctr) {
@@ -6470,8 +6530,6 @@ static void pcap_note_receive_ctr(iox2_cif_ps_sub* s, uint64_t ctr) {
 static iox2_cif_status pcap_take_sample(
     iox2_cif_ps_sub* s,
     void* header,
-    void* pcap_header,
-    uint32_t pcap_header_len,
     void* pcap,
     uint32_t cap,
     uint32_t* actual,
@@ -6507,11 +6565,6 @@ static iox2_cif_status pcap_take_sample(
     }
     live = hdr.length - IOX2_CIF_PCAP_HDR_SIZE;
     max_pcap = s->max_count;
-    if (pcap_header_len > max_pcap) {
-        iox2_sample_drop(sample);
-        return IOX2_CIF_ERR_ARRAY_TOO_LARGE;
-    }
-    max_pcap -= pcap_header_len;
     if (live > max_pcap) {
         live = max_pcap;
     }
@@ -6520,14 +6573,6 @@ static iox2_cif_status pcap_take_sample(
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
     body = (const uint8_t*)payload + IOX2_CIF_PCAP_HDR_SIZE;
-    if (pcap_header_len > 0) {
-        if (pcap_header == NULL
-            || copy_bytes_bounded(pcap_header, body, pcap_header_len) != IOX2_CIF_OK) {
-            iox2_sample_drop(sample);
-            return IOX2_CIF_ERR_INVALID_ARGUMENT;
-        }
-        body += pcap_header_len;
-    }
     copy_n = (uint32_t)live;
     if (copy_n > cap) {
         copy_n = cap;
@@ -6614,8 +6659,6 @@ static iox2_cif_status pcap_take_raw(
 iox2_cif_status iox2_cif_pcap_receive(
     uint64_t subscriber,
     void* header,
-    void* pcap_header,
-    uint32_t pcap_header_len,
     void* pcap,
     uint32_t cap,
     uint32_t timeout_ms,
@@ -6630,8 +6673,7 @@ iox2_cif_status iox2_cif_pcap_receive(
     int did_timeout = 0;
     iox2_cif_status st = IOX2_CIF_OK;
 
-    if (timed_out == NULL || samples == NULL || dropped == NULL || timeouts == NULL || header == NULL
-        || (pcap_header == NULL && pcap_header_len != 0)) {
+    if (timed_out == NULL || samples == NULL || dropped == NULL || timeouts == NULL || header == NULL) {
         return IOX2_CIF_ERR_INVALID_ARGUMENT;
     }
     st = store_i32(timed_out, 0);
@@ -6654,7 +6696,7 @@ iox2_cif_status iox2_cif_pcap_receive(
     s->inflight++;
     unlock_exclusive();
 
-    st = pcap_take_sample(s, header, pcap_header, pcap_header_len, pcap, cap, actual, max, &got);
+    st = pcap_take_sample(s, header, pcap, cap, actual, max, &got);
     if (st == IOX2_CIF_OK && !got && timeout_ms > 0) {
         enum iox2_waitset_run_result_e result = iox2_waitset_run_result_e_ALL_EVENTS_HANDLED;
         uint64_t sec = (uint64_t)(timeout_ms / 1000u);
@@ -6665,7 +6707,7 @@ iox2_cif_status iox2_cif_pcap_receive(
             set_last_detail("waitset wait");
             st = IOX2_CIF_ERR_INTERNAL;
         } else {
-            st = pcap_take_sample(s, header, pcap_header, pcap_header_len, pcap, cap, actual, max, &got);
+            st = pcap_take_sample(s, header, pcap, cap, actual, max, &got);
         }
     }
     if (st == IOX2_CIF_OK && !got) {

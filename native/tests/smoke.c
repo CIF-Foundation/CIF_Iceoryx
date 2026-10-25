@@ -1080,7 +1080,7 @@ static int test_pcap(void) {
     memset(&out, 0, sizeof(out));
     memset(got, 0, sizeof(got));
     timed_out = 1;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 2, 3, 200, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 2, 3, 200, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0 || samples != 1 || timeouts != 0) {
         fprintf(stderr, "FAIL pcap write st=%d to=%d samples=%llu to=%llu\n",
             (int)st, (int)timed_out, (unsigned long long)samples, (unsigned long long)timeouts);
@@ -1089,7 +1089,7 @@ static int test_pcap(void) {
     }
     actual = 0;
     st = iox2_cif_pcap_receive(
-        be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0 || actual != 3 || out.length != 51 || out.ctr != 0
         || out.t_tx != tx || out.clock_id != 7 || got[0] != 7 || got[1] != 6 || got[2] != 5
         || samples != 1 || dropped != 0) {
@@ -1106,7 +1106,7 @@ static int test_pcap(void) {
     }
     memset(&out, 0, sizeof(out));
     st = iox2_cif_pcap_receive(
-        bp, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        bp, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || out.ctr != 0 || actual != 3) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap bp recv", st);
@@ -1121,7 +1121,7 @@ static int test_pcap(void) {
     }
 
     timed_out = 1;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 200, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 200, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0 || samples != 2) {
         fprintf(stderr, "FAIL pcap fill write st=%d to=%d samples=%llu\n",
             (int)st, (int)timed_out, (unsigned long long)samples);
@@ -1129,7 +1129,7 @@ static int test_pcap(void) {
         return 1;
     }
     timed_out = 0;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 80, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 80, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 1 || samples != 2 || timeouts != 1) {
         fprintf(stderr, "FAIL pcap bp timeout write st=%d to=%d samples=%llu timeouts=%llu\n",
             (int)st, (int)timed_out, (unsigned long long)samples, (unsigned long long)timeouts);
@@ -1159,7 +1159,7 @@ static int test_pcap(void) {
     timed_out = 0;
     actual = 9;
     st = iox2_cif_pcap_receive(
-        bp, &out, NULL, 0, got, sizeof(got), 40, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        bp, &out, got, sizeof(got), 40, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 1 || actual != 0 || timeouts != 1) {
         fprintf(stderr, "FAIL pcap flush then timeout to=%d actual=%u timeouts=%llu\n",
             (int)timed_out, actual, (unsigned long long)timeouts);
@@ -1169,7 +1169,7 @@ static int test_pcap(void) {
     timed_out = 0;
     actual = 9;
     st = iox2_cif_pcap_receive(
-        bp, &out, NULL, 0, got, sizeof(got), 0, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        bp, &out, got, sizeof(got), 0, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 1 || actual != 0 || timeouts != 2) {
         fprintf(stderr, "FAIL pcap recv empty one-shot to=%d actual=%u timeouts=%llu\n",
             (int)timed_out, actual, (unsigned long long)timeouts);
@@ -1189,36 +1189,36 @@ static int test_pcap(void) {
     }
 
     timed_out = 1;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 2, 200, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 2, 200, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0 || samples != 1) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap write after reset", st);
     }
     st = iox2_cif_pcap_receive(
-        be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || out.ctr != 2) {
         fprintf(stderr, "FAIL on-wire ctr after stats_reset ctr=%llu (want 2)\n", (unsigned long long)out.ctr);
         pcap_cleanup(writer, be, bp);
         return 1;
     }
     st = iox2_cif_pcap_receive(
-        bp, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        bp, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || out.ctr != 2) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap bp recv after reset", st);
     }
 
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 200, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 200, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap write 2", st);
     }
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 80, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 80, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 1) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap write overflow for drop", st);
     }
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 80, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 80, &timed_out, &samples, &timeouts);
     (void)st;
     discarded = 0;
     st = iox2_cif_pcap_flush(be, &discarded);
@@ -1237,13 +1237,13 @@ static int test_pcap(void) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap stats_reset", st);
     }
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 200, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 200, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap write first after reset", st);
     }
     st = iox2_cif_pcap_receive(
-        be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK) {
         pcap_cleanup(writer, be, bp);
         return fail("pcap recv baseline", st);
@@ -1251,27 +1251,27 @@ static int test_pcap(void) {
     {
         uint64_t first_ctr = out.ctr;
         st = iox2_cif_pcap_receive(
-            bp, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+            bp, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
         if (st != IOX2_CIF_OK) {
             pcap_cleanup(writer, be, bp);
             return fail("pcap bp drain baseline", st);
         }
         /* BE queue is the advertised writer depth (4). Overflow it; drain BP so writes succeed. */
         for (int i = 0; i < 5; ++i) {
-            st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 200, &timed_out, &samples, &timeouts);
+            st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 200, &timed_out, &samples, &timeouts);
             if (st != IOX2_CIF_OK) {
                 pcap_cleanup(writer, be, bp);
                 return fail("pcap write gap", st);
             }
             st = iox2_cif_pcap_receive(
-                bp, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+                bp, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
             if (st != IOX2_CIF_OK) {
                 pcap_cleanup(writer, be, bp);
                 return fail("pcap bp recv gap", st);
             }
         }
         st = iox2_cif_pcap_receive(
-            be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+            be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
         if (st != IOX2_CIF_OK || timed_out != 0 || dropped < 1 || out.ctr != first_ctr + 2) {
             fprintf(stderr, "FAIL pcap dropped st=%d to=%d dropped=%llu ctr=%llu want>=%llu\n",
                 (int)st,
@@ -1318,13 +1318,13 @@ static int test_pcap(void) {
         return fail("typed sub on universal writer", st);
     }
     timed_out = 1;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 1, 0, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, src, 0, 1, 0, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0) {
         pcap_cleanup(writer, be, 0);
         return fail("universal write", st);
     }
     st = iox2_cif_pcap_receive(
-        be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0 || actual != 1) {
         pcap_cleanup(writer, be, 0);
         return fail("typed sub recv universal", st);
@@ -1343,13 +1343,13 @@ static int test_pcap(void) {
         return fail("universal sub on typed writer", st);
     }
     timed_out = 1;
-    st = iox2_cif_pcap_write(writer, &in, NULL, 0, NULL, 0, 0, 0, &timed_out, &samples, &timeouts);
+    st = iox2_cif_pcap_write(writer, &in, NULL, 0, 0, 0, &timed_out, &samples, &timeouts);
     if (st != IOX2_CIF_OK || timed_out != 0) {
         pcap_cleanup(writer, be, 0);
         return fail("empty pcap write", st);
     }
     st = iox2_cif_pcap_receive(
-        be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+        be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
     if (st != IOX2_CIF_OK || actual != 0 || out.length != 48) {
         fprintf(stderr, "FAIL empty pcap actual=%u length=%llu\n", actual, (unsigned long long)out.length);
         pcap_cleanup(writer, be, 0);
@@ -1358,79 +1358,6 @@ static int test_pcap(void) {
     pcap_cleanup(writer, be, 0);
     writer = 0;
     be = 0;
-
-    st = iox2_cif_pcap_writer_create(
-        "iox2_cif_smoke_pcap_app", "app", 1, 16, "", 2, 1, 2, 1, &writer);
-    if (st != IOX2_CIF_OK) {
-        return fail("pcap app-header writer", st);
-    }
-    st = iox2_cif_pcap_sub_create("iox2_cif_smoke_pcap_app", "app", 1, 0, 2000, &be);
-    if (st != IOX2_CIF_OK) {
-        pcap_cleanup(writer, 0, 0);
-        return fail("pcap app-header be", st);
-    }
-    st = iox2_cif_pcap_sub_create("iox2_cif_smoke_pcap_app", "app", 1, 1, 2000, &bp);
-    if (st != IOX2_CIF_OK) {
-        pcap_cleanup(writer, be, 0);
-        return fail("pcap app-header bp", st);
-    }
-    {
-        uint8_t app_hdr[4] = {0xAA, 0xBB, 0xCC, 0xDD};
-        uint8_t app_got[4];
-        uint8_t rec[3] = {1, 2, 3};
-
-        st = iox2_cif_pcap_write(writer, &in, NULL, 4, rec, 0, 1, 0, &timed_out, &samples, &timeouts);
-        if (st != IOX2_CIF_ERR_INVALID_ARGUMENT) {
-            pcap_cleanup(writer, be, bp);
-            return fail("pcap header NULL", st);
-        }
-        st = iox2_cif_pcap_write(writer, &in, app_hdr, 16, rec, 0, 1, 0, &timed_out, &samples, &timeouts);
-        if (st != IOX2_CIF_ERR_ARRAY_TOO_LARGE) {
-            pcap_cleanup(writer, be, bp);
-            return fail("pcap header+pcap too large", st);
-        }
-
-        memset(app_got, 0, sizeof(app_got));
-        memset(got, 0, sizeof(got));
-        memset(&out, 0, sizeof(out));
-        timed_out = 1;
-        st = iox2_cif_pcap_write(writer, &in, app_hdr, 4, rec, 0, 3, 200, &timed_out, &samples, &timeouts);
-        if (st != IOX2_CIF_OK || timed_out != 0) {
-            pcap_cleanup(writer, be, bp);
-            return fail("pcap write with header", st);
-        }
-        actual = 0;
-        st = iox2_cif_pcap_receive(
-            be, &out, app_got, 4, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
-        if (st != IOX2_CIF_OK || timed_out != 0 || actual != 3 || out.length != 51 || maxv != 16
-            || memcmp(app_got, app_hdr, 4) != 0 || got[0] != 1 || got[1] != 2 || got[2] != 3) {
-            fprintf(stderr,
-                "FAIL pcap header recv actual=%u len=%llu max=%u hdr=%02x %02x %02x %02x rec=%u %u %u\n",
-                actual,
-                (unsigned long long)out.length,
-                maxv,
-                app_got[0],
-                app_got[1],
-                app_got[2],
-                app_got[3],
-                got[0],
-                got[1],
-                got[2]);
-            pcap_cleanup(writer, be, bp);
-            return 1;
-        }
-        memset(app_got, 0, sizeof(app_got));
-        st = iox2_cif_pcap_receive(
-            bp, &out, app_got, 4, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
-        if (st != IOX2_CIF_OK || actual != 3 || memcmp(app_got, app_hdr, 4) != 0) {
-            pcap_cleanup(writer, be, bp);
-            return fail("pcap header recv bp", st);
-        }
-    }
-    pcap_cleanup(writer, be, bp);
-    writer = 0;
-    be = 0;
-    bp = 0;
 
     st = iox2_cif_pcap_writer_create(
         "iox2_cif_smoke_pcap_raw", "xfer", 1, 16, "", 2, 1, 2, 1, &writer);
@@ -1466,7 +1393,7 @@ static int test_pcap(void) {
         }
 
         timed_out = 1;
-        st = iox2_cif_pcap_write(writer, &in, NULL, 0, src, 0, 3, 200, &timed_out, &samples, &timeouts);
+        st = iox2_cif_pcap_write(writer, &in, src, 0, 3, 200, &timed_out, &samples, &timeouts);
         if (st != IOX2_CIF_OK || timed_out != 0) {
             pcap_cleanup(writer, be, bp);
             return fail("pcap write for raw recv", st);
@@ -1516,7 +1443,7 @@ static int test_pcap(void) {
         memset(&out, 0, sizeof(out));
         memset(got, 0, sizeof(got));
         st = iox2_cif_pcap_receive(
-            be, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+            be, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
         if (st != IOX2_CIF_OK || timed_out != 0 || actual != 3 || out.length != 51 || out.t_tx != tx
             || out.clock_id != 7 || got[0] != 11 || got[1] != 22 || got[2] != 33) {
             fprintf(stderr, "FAIL pcap write_raw->recv actual=%u len=%llu got=%u %u %u\n",
@@ -1529,7 +1456,7 @@ static int test_pcap(void) {
             return 1;
         }
         st = iox2_cif_pcap_receive(
-            bp, &out, NULL, 0, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
+            bp, &out, got, sizeof(got), 500, &actual, &maxv, &timed_out, &samples, &dropped, &timeouts);
         if (st != IOX2_CIF_OK || timed_out != 0 || actual != 3) {
             pcap_cleanup(writer, be, bp);
             return fail("pcap write_raw bp recv", st);
