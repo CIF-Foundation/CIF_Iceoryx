@@ -15,7 +15,7 @@ symlink named `libiox2_cif.so` / `iox2_cif.dll` (the LabVIEW Call Library name).
 1. Keep `VERSION` and `Installers/cif_iox2_ipk/CONTROL/control` in sync when cutting a release.
 2. Build the RT library (core2, no AVX — required for Atom cRIO such as 9057):
 
-   `powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1`
+   `powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1 -Target <ssh-host>`
 
 3. From Windows (needs WSL):
 
@@ -46,7 +46,7 @@ symlink (copy fallback if `mklink` fails).
 
 Build on Ubuntu 20.04 (glibc 2.31):
 
-`powershell -ExecutionPolicy Bypass -File .\scripts\build-ubuntu2004.ps1`
+`powershell -ExecutionPolicy Bypass -File .\scripts\build-ubuntu2004.ps1 -Target <ssh-host>`
 
 Then:
 

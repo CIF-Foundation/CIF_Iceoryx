@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: Apache-2.0 OR MIT
+/* SPDX-License-Identifier: Apache-2.0
  *
  * iceoryx2 CIF wrapper — public C ABI (blackboard + publish-subscribe).
  * CIF = Composable Instrumentation Framework.

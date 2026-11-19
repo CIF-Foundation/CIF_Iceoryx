@@ -7,7 +7,7 @@
 # Installers/output/.
 #
 # This script does not compile the native library. Build it first:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\build-ubuntu2004.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\build-ubuntu2004.ps1 -Target <ssh-host>
 #
 # Usage:
 #   bash Installers/build_deb.sh
@@ -45,7 +45,7 @@ elif [[ -f "${DIST_SO}" ]]; then
   echo "Using shared library from dist: ${SO_SOURCE}" >&2
 else
   echo "Error: Shared library not found at ${TEMPLATE_SO} or ${DIST_SO}" >&2
-  echo "Build the Ubuntu 20.04 library first (scripts/build-ubuntu2004.ps1)." >&2
+  echo "Build the Ubuntu 20.04 library first (scripts/build-ubuntu2004.ps1 -Target <ssh-host>)." >&2
   echo "Expected ${DIST_SO}" >&2
   echo "Or place ${SO_NAME} in the Debian template, or set SO_SOURCE." >&2
   exit 1

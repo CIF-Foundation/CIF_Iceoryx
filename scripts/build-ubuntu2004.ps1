@@ -1,15 +1,20 @@
-# Sync sources to Ubuntu 20.04 Docker on 192.168.1.158 and build libiox2_cif.so
-# against glibc 2.31 (Ubuntu 20.04). Override with -Target / -RemoteUser.
+# Sync sources to an Ubuntu host and build libiox2_cif.so in Ubuntu 20.04 Docker
+# (glibc 2.31). -Target is the SSH destination (host, or user@host).
 param(
-    [string]$Target = "192.168.1.158",
-    [string]$RemoteUser = "dome",
-    [string]$RemoteRoot = "/home/dome/src/iox2_cifwrapper",
+    [Parameter(Mandatory = $true)]
+    [string]$Target,
+    [string]$RemoteUser,
+    [string]$RemoteRoot = "~/src/iox2_cifwrapper",
     [string]$ImageName = "iox2-cif-ubuntu2004"
 )
 
+if ([string]::IsNullOrWhiteSpace($Target)) {
+    throw "Pass -Target <ssh-host>. Example: .\scripts\build-ubuntu2004.ps1 -Target user@build-host"
+}
+$Remote = if ([string]::IsNullOrWhiteSpace($RemoteUser)) { $Target } else { "${RemoteUser}@${Target}" }
+
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Remote = "${RemoteUser}@${Target}"
 
 function Invoke-Ubuntu([string]$RemoteCommand) {
     ssh -o ConnectTimeout=15 $Remote $RemoteCommand
@@ -23,7 +28,7 @@ $tar = Join-Path $env:TEMP "iox2_cif_ubuntu2004.tar"
 if (Test-Path $tar) { Remove-Item $tar -Force }
 Push-Location $Root
 try {
-    tar -cf $tar CMakeLists.txt native scripts VERSION
+    tar -cf $tar CMakeLists.txt native scripts VERSION third_party/iceoryx2.rev
 } finally {
     Pop-Location
 }

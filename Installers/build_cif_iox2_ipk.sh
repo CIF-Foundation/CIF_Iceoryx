@@ -8,7 +8,7 @@
 #   4. Create the .ipk archive with opkg-build and move it to Installers/output/
 #
 # This script does not compile the native library. Build it first:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1 -Target <ssh-host>
 #
 # Uses Installers/opkg-utils/opkg-build when opkg-build is not installed system-wide.
 # Requires binutils (ar), tar, gzip, and python3.
@@ -68,7 +68,7 @@ elif [[ ! -f "${TEMPLATE_SO}" ]]; then
   else
     echo "Error: Shared library not found at ${TEMPLATE_SO} or ${DIST_SO}" >&2
     echo "Build the RT library first:" >&2
-    echo "  powershell -ExecutionPolicy Bypass -File .\\scripts\\build-linuxrt.ps1" >&2
+    echo "  powershell -ExecutionPolicy Bypass -File .\\scripts\\build-linuxrt.ps1 -Target <ssh-host>" >&2
     echo "Expected ${DIST_SO}" >&2
     echo "Or place ${SO_NAME} in the IPK template, or set SO_SOURCE." >&2
     exit 1

@@ -1,10 +1,15 @@
 # Sync sources to NI Linux RT and build libiox2_cif.so natively on the target.
-# Default host: RT_NUC (192.168.1.160). Override with -Target.
+# -Target is the SSH host (an OpenSSH config alias or a hostname).
 param(
-    [string]$Target = "RT_NUC",
+    [Parameter(Mandatory = $true)]
+    [string]$Target,
     [string]$RemoteHome = "/home/admin",
     [string]$RemoteRoot = "/home/admin/src/iox2_cifwrapper"
 )
+
+if ([string]::IsNullOrWhiteSpace($Target)) {
+    throw "Pass -Target <ssh-host>. Example: .\scripts\build-linuxrt.ps1 -Target my-rt-host"
+}
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
@@ -21,7 +26,7 @@ $tar = Join-Path $env:TEMP "iox2_cif_linuxrt.tar"
 if (Test-Path $tar) { Remove-Item $tar -Force }
 Push-Location $Root
 try {
-    tar -cf $tar CMakeLists.txt native scripts VERSION
+    tar -cf $tar CMakeLists.txt native scripts VERSION third_party/iceoryx2.rev
 } finally {
     Pop-Location
 }

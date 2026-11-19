@@ -1,4 +1,7 @@
-/* iceoryx2 CIF wrapper — blackboard + pub/sub (Windows DLL / Linux .so). */
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * iceoryx2 CIF wrapper — blackboard + pub/sub (Windows DLL / Linux .so).
+ */
 
 #if !defined(_WIN32) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
@@ -159,6 +162,18 @@ static char g_last_detail[192];
 
 static void dbg_log(const char* fmt, ...);
 
+/* IOX2_CIF_DEBUG=1 appends traces to C:\Temp\iox2_cif.log or /tmp/iox2_cif.log. */
+static int dbg_enabled(void) {
+    static int cached = -1;
+    const char* value;
+    if (cached >= 0) {
+        return cached;
+    }
+    value = getenv("IOX2_CIF_DEBUG");
+    cached = (value != NULL && value[0] != '\0' && strcmp(value, "0") != 0) ? 1 : 0;
+    return cached;
+}
+
 /*
  * LabVIEW FreeLibrary's this DLL when the last VI that referenced it closes.
  * A background node.wait() thread (and the statically linked Rust runtime) cannot
@@ -213,6 +228,9 @@ static void pin_library(void) {
 static void dbg_log(const char* fmt, ...) {
     FILE* f = NULL;
     va_list ap;
+    if (!dbg_enabled()) {
+        return;
+    }
 #ifdef _WIN32
     f = fopen("C:\\Temp\\iox2_cif.log", "a");
 #else

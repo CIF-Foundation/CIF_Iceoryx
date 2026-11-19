@@ -26,11 +26,7 @@ function Find-VcVars64 {
     throw "Could not find vcvars64.bat. Install Visual Studio C++ tools."
 }
 
-$iox2 = Join-Path $Root "third_party\iceoryx2"
-if (-not (Test-Path (Join-Path $iox2 "CMakeLists.txt"))) {
-    New-Item -ItemType Directory -Force -Path (Join-Path $Root "third_party") | Out-Null
-    git clone --depth 1 https://github.com/eclipse-iceoryx/iceoryx2.git $iox2
-}
+& (Join-Path $PSScriptRoot "fetch-iceoryx2.ps1")
 
 $vcvars = Find-VcVars64
 Write-Host "Using $vcvars"
