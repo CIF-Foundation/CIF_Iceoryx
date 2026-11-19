@@ -17,10 +17,10 @@ iceoryx2 does not use RouDi. No extra service process is required.
 From PowerShell (CMake, git, Rust MSVC, Visual Studio C++ tools):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\dev\iceoryx2_lvwrapper\scripts\build.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-That produces `dist\iox2_cif.dll` and runs a C smoke test (I32 write/read).
+That produces `dist\windows\iox2_cif-windows-<version>.dll` and runs a C smoke test (I32 write/read). Set `IOX2_CIF_DEBUG=1` before starting LabVIEW to append create/start traces to `C:\Temp\iox2_cif.log`. Leave it unset for normal use.
 
 ## Minimum LabVIEW test (I32)
 
@@ -30,7 +30,7 @@ Use two loops or two VIs in the same bitness. Handles are **U64**. Status is **I
 
 | Field | Value |
 |---|---|
-| Library | `...\dist\iox2_cif.dll` |
+| Library | `dist\windows\iox2_cif-windows-<version>.dll` |
 | Calling convention | C (cdecl) |
 | Run in | **UI thread** for create/start/destroy; **any thread** for write/read |
 | Return type | Signed 32-bit Integer |
@@ -175,7 +175,7 @@ Create/destroy / `pcap_info` / `pcap_sub_open`: **UI thread**. Write/receive/sta
 Build the shared library on the RT target (needs SSH, gcc, and internet for the first iceoryx2/Rust compile):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\dev\iceoryx2_lvwrapper\scripts\build-linuxrt.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build-linuxrt.ps1 -Target <ssh-host>
 ```
 
 That produces `dist\linuxrt\libiox2_cif-linuxrt.so.<version>`. The development script also installs the versioned file on the build target and symlinks `libiox2_cif.so`. Ship with the IPK (`Installers\build_cif_iox2_ipk.bat`), which installs the versioned `.so` under `/usr/lib/cif/` and symlinks `/usr/lib/cif/libiox2_cif.so` and `/usr/lib/libiox2_cif.so`.

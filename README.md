@@ -13,7 +13,7 @@ Build (Windows DLL + smoke test):
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-That writes `dist\windows\iox2_cif-windows-<version>.dll`. Linux RT: `scripts\build-linuxrt.ps1` → `dist\linuxrt\libiox2_cif-linuxrt.so.<version>`. Ubuntu 20.04: `scripts\build-ubuntu2004.ps1` → `dist\ubuntu\libiox2_cif-ubuntu.so.<version>`.
+That writes `dist\windows\iox2_cif-windows-<version>.dll`. Linux RT and Ubuntu builds require an SSH host: `scripts\build-linuxrt.ps1 -Target <ssh-host>` → `dist\linuxrt\libiox2_cif-linuxrt.so.<version>`. `scripts\build-ubuntu2004.ps1 -Target <ssh-host>` → `dist\ubuntu\libiox2_cif-ubuntu.so.<version>`. The scripts fetch the iceoryx2 commit in `third_party/iceoryx2.rev`.
 
 Native installers ([`Installers/readme.md`](Installers/readme.md)) install the versioned file and symlink the LabVIEW names:
 
@@ -224,3 +224,19 @@ Not supported: strings, paths, variants, handles, nested arrays, 2D+ arrays, clu
 Create / Start / Destroy: **Run in UI thread** (first load of this fat DLL from an execution thread can deadlock in `LoadLibrary`). Leave **Unload after call** unchecked. The DLL is pinned so closing a VI does not unmap it while the wait thread is running.
 
 Hot-path Write / Read can **Run in any thread**.
+
+---
+
+## License
+
+Copyright 2024-2026 CIF Foundation
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this project except in compliance with the License. You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+The full license text is in [`LICENSE`](LICENSE).
+
+This library statically links [iceoryx2](https://github.com/eclipse-iceoryx/iceoryx2), which is licensed under Apache-2.0 or MIT. See [`NOTICE`](NOTICE).

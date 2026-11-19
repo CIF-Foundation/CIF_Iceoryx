@@ -2,6 +2,8 @@ cif-iox2 — iceoryx2 CIF wrapper shared library
 
 Copyright 2024-2026 CIF Foundation / Dome Automation
 
+The CIF wrapper is licensed under the Apache License, Version 2.0.
+
 This package contains libiox2_cif.so, which statically links
 eclipse-iceoryx/iceoryx2 (Apache License 2.0 or MIT).
 

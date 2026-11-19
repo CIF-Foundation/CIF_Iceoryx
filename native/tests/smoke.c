@@ -1,4 +1,7 @@
-/* C smoke test: I32 blackboard write/read in one process. */
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * C smoke test: I32 blackboard write/read in one process.
+ */
 #include "iox2_cif.h"
 
 #include <stdio.h>

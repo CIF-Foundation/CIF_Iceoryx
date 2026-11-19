@@ -15,7 +15,6 @@ VERSION="$(tr -d ' \t\r\n' < "$ROOT/VERSION")"
 BUILD_DIR="${BUILD_DIR:-$ROOT/build-ubuntu2004}"
 DIST_DIR="${DIST_DIR:-$ROOT/dist/ubuntu}"
 SO_NAME="libiox2_cif-ubuntu.so.${VERSION}"
-IOX2_DIR="$ROOT/third_party/iceoryx2"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 2)}"
 
 echo "Root: $ROOT"
@@ -28,10 +27,7 @@ echo "RUSTFLAGS=$RUSTFLAGS"
 echo "VERSION=$VERSION"
 echo "SO_NAME=$SO_NAME"
 
-if [ ! -f "$IOX2_DIR/CMakeLists.txt" ]; then
-    mkdir -p "$(dirname "$IOX2_DIR")"
-    git clone --depth 1 https://github.com/eclipse-iceoryx/iceoryx2.git "$IOX2_DIR"
-fi
+bash "$(dirname "$0")/fetch-iceoryx2.sh"
 
 mkdir -p "$BUILD_DIR" "$DIST_DIR"
 

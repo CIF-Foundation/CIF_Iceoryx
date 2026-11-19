@@ -3,8 +3,8 @@ project(iox2_cif C)
 
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/iceoryx2/CMakeLists.txt")
     message(FATAL_ERROR
-        "third_party/iceoryx2 is missing. Clone it first:\n"
-        "  git clone --depth 1 https://github.com/eclipse-iceoryx/iceoryx2.git third_party/iceoryx2")
+        "third_party/iceoryx2 is missing.\n"
+        "  The build scripts fetch the commit in third_party/iceoryx2.rev.")
 endif()
 
 set(BUILD_CXX OFF CACHE BOOL "Build iceoryx2 C++ bindings" FORCE)
